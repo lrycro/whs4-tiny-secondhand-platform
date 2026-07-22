@@ -1,0 +1,32 @@
+{% extends "base.html" %}
+{% block title %}{{ "상품 등록" if mode == "new" else "상품 수정" }}{% endblock %}
+{% block content %}
+  <h1>{{ "상품 등록" if mode == "new" else "상품 수정" }}</h1>
+  <form method="post" enctype="multipart/form-data" class="col-md-6" novalidate>
+    {{ form.hidden_tag() }}
+    <div class="mb-3">
+      {{ form.name.label(class_="form-label") }}
+      {{ form.name(class_="form-control", maxlength=200) }}
+      {% for error in form.name.errors %}<div class="text-danger small">{{ error }}</div>{% endfor %}
+    </div>
+    <div class="mb-3">
+      {{ form.description.label(class_="form-label") }}
+      {{ form.description(class_="form-control", rows=5, maxlength=2000) }}
+      {% for error in form.description.errors %}<div class="text-danger small">{{ error }}</div>{% endfor %}
+    </div>
+    <div class="mb-3">
+      {{ form.price.label(class_="form-label") }}
+      {{ form.price(class_="form-control") }}
+      {% for error in form.price.errors %}<div class="text-danger small">{{ error }}</div>{% endfor %}
+    </div>
+    <div class="mb-3">
+      {{ form.photo.label(class_="form-label") }}
+      {{ form.photo(class_="form-control") }}
+      {% for error in form.photo.errors %}<div class="text-danger small">{{ error }}</div>{% endfor %}
+      {% if product and product.image_filename %}
+        <div class="form-text">기존 사진을 유지하려면 비워두세요.</div>
+      {% endif %}
+    </div>
+    {{ form.submit(class_="btn btn-primary") }}
+  </form>
+{% endblock %}

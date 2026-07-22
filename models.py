@@ -73,6 +73,7 @@ class Product(db.Model):
     name = db.Column(db.String(200), nullable=False)
     description = db.Column(db.Text, nullable=True)
     price = db.Column(db.Integer, nullable=False)
+    image_filename = db.Column(db.String(255), nullable=True)
     seller_id = db.Column(db.Integer, db.ForeignKey("users.id"), nullable=False, index=True)
     status = db.Column(db.Enum(ProductStatus), nullable=False, default=ProductStatus.ACTIVE)
     report_count = db.Column(db.Integer, nullable=False, default=0)

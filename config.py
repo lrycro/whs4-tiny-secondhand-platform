@@ -22,3 +22,8 @@ class Config:
     SESSION_COOKIE_SECURE = os.environ.get("SESSION_COOKIE_SECURE", "false").lower() == "true"
 
     WTF_CSRF_ENABLED = True
+
+    # product photo uploads: extension allowlist enforced in blueprints/products/forms.py,
+    # size cap enforced here (also blocks oversized-upload DoS at the WSGI layer)
+    MAX_CONTENT_LENGTH = 5 * 1024 * 1024
+    PRODUCT_UPLOAD_DIR = os.path.join(BASE_DIR, "static", "uploads", "products")

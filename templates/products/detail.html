@@ -1,0 +1,22 @@
+{% extends "base.html" %}
+{% block title %}{{ product.name }}{% endblock %}
+{% block content %}
+  <h1>{{ product.name }}</h1>
+  {% if product.image_filename %}
+    <img src="{{ url_for('static', filename='uploads/products/' + product.image_filename) }}"
+         alt="{{ product.name }}" class="img-fluid mb-3" style="max-width: 400px;">
+  {% endif %}
+  <p class="text-muted">판매자: {{ product.seller.username }}</p>
+  <p class="fs-4">{{ "{:,}".format(product.price) }}원</p>
+  <p style="white-space: pre-wrap;">{{ product.description or "" }}</p>
+
+  {% if current_user.id == product.seller_id %}
+    <a class="btn btn-outline-secondary" href="{{ url_for('products.product_edit', product_id=product.id) }}">수정</a>
+    <form action="{{ url_for('products.product_delete', product_id=product.id) }}" method="post"
+          class="d-inline" onsubmit="return confirm('정말 삭제하시겠습니까?');">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+      <button type="submit" class="btn btn-outline-danger">삭제</button>
+    </form>
+  {% endif %}
+  <a class="btn btn-link" href="{{ url_for('products.product_list') }}">목록으로</a>
+{% endblock %}

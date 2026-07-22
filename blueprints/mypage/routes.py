@@ -3,6 +3,7 @@ from flask_login import current_user, login_required
 
 from blueprints.mypage.forms import BioForm, ChangePasswordForm
 from extensions import db
+from models import Product
 
 mypage_bp = Blueprint("mypage", __name__)
 
@@ -30,4 +31,9 @@ def mypage():
             flash("비밀번호가 변경되었습니다.", "success")
             return redirect(url_for("mypage.mypage"))
 
-    return render_template("mypage.html", bio_form=bio_form, password_form=password_form)
+    my_products = (
+        Product.query.filter_by(seller_id=current_user.id).order_by(Product.created_at.desc()).all()
+    )
+    return render_template(
+        "mypage.html", bio_form=bio_form, password_form=password_form, my_products=my_products
+    )

@@ -30,10 +30,12 @@ def create_app(config_class=Config):
     from blueprints.auth.routes import auth_bp
     from blueprints.main.routes import main_bp
     from blueprints.mypage.routes import mypage_bp
+    from blueprints.products.routes import products_bp
 
     app.register_blueprint(auth_bp)
     app.register_blueprint(main_bp)
     app.register_blueprint(mypage_bp)
+    app.register_blueprint(products_bp)
 
     with app.app_context():
         db.create_all()

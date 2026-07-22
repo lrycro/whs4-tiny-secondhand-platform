@@ -42,4 +42,26 @@
     </div>
     {{ password_form.submit_password(class_="btn btn-primary") }}
   </form>
+
+  <h2 class="h5 mt-5">내 상품 목록</h2>
+  {% if my_products %}
+    <ul class="list-group col-md-8">
+      {% for product in my_products %}
+        <li class="list-group-item d-flex justify-content-between align-items-center">
+          <a href="{{ url_for('products.product_detail', product_id=product.id) }}">{{ product.name }}</a>
+          <span>
+            <a class="btn btn-sm btn-outline-secondary"
+               href="{{ url_for('products.product_edit', product_id=product.id) }}">수정</a>
+            <form action="{{ url_for('products.product_delete', product_id=product.id) }}" method="post"
+                  class="d-inline" onsubmit="return confirm('정말 삭제하시겠습니까?');">
+              <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+              <button type="submit" class="btn btn-sm btn-outline-danger">삭제</button>
+            </form>
+          </span>
+        </li>
+      {% endfor %}
+    </ul>
+  {% else %}
+    <p>등록한 상품이 없습니다.</p>
+  {% endif %}
 {% endblock %}
