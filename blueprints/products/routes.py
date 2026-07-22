@@ -1,7 +1,7 @@
 import os
 import uuid
 
-from flask import Blueprint, abort, current_app, flash, redirect, render_template, url_for
+from flask import Blueprint, abort, current_app, flash, redirect, render_template, request, url_for
 from flask_login import current_user, login_required
 
 from blueprints.products.forms import ProductForm
@@ -9,6 +9,16 @@ from extensions import db
 from models import Product, ProductStatus
 
 products_bp = Blueprint("products", __name__)
+
+SEARCH_QUERY_MAX_LENGTH = 200
+
+
+def _like_pattern(term):
+    # escape LIKE wildcards in user input so e.g. searching "50%" doesn't match everything;
+    # SQLAlchemy still parameter-binds the value itself, so this is a correctness fix, not
+    # an injection fix -- the ORM already prevents SQL injection here.
+    escaped = term.replace("\\", "\\\\").replace("%", "\\%").replace("_", "\\_")
+    return f"%{escaped}%"
 
 
 def _save_photo(file_storage):
@@ -29,7 +39,25 @@ def product_list():
     products = (
         Product.query.filter_by(status=ProductStatus.ACTIVE).order_by(Product.created_at.desc()).all()
     )
-    return render_template("products/list.html", products=products)
+    return render_template("products/list.html", products=products, search_query="")
+
+
+@products_bp.route("/products/search")
+@login_required
+def product_search():
+    raw_query = request.args.get("q", "").strip()[:SEARCH_QUERY_MAX_LENGTH]
+
+    query = Product.query.filter_by(status=ProductStatus.ACTIVE)
+    if raw_query:
+        pattern = _like_pattern(raw_query)
+        query = query.filter(
+            db.or_(
+                Product.name.ilike(pattern, escape="\\"),
+                Product.description.ilike(pattern, escape="\\"),
+            )
+        )
+    products = query.order_by(Product.created_at.desc()).all()
+    return render_template("products/list.html", products=products, search_query=raw_query)
 
 
 @products_bp.route("/products/new", methods=["GET", "POST"])

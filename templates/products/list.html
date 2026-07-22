@@ -1,10 +1,26 @@
 {% extends "base.html" %}
-{% block title %}상품 목록{% endblock %}
+{% block title %}{{ "검색 결과" if search_query else "상품 목록" }}{% endblock %}
 {% block content %}
   <div class="d-flex justify-content-between align-items-center mb-3">
-    <h1>상품 목록</h1>
+    <h1>{{ "검색 결과" if search_query else "상품 목록" }}</h1>
     <a class="btn btn-primary" href="{{ url_for('products.product_new') }}">상품 등록</a>
   </div>
+
+  <form method="get" action="{{ url_for('products.product_search') }}" class="row g-2 mb-4">
+    <div class="col-auto">
+      <input type="text" name="q" class="form-control" placeholder="상품명/설명 검색"
+             value="{{ search_query }}" maxlength="200">
+    </div>
+    <div class="col-auto">
+      <button type="submit" class="btn btn-outline-primary">검색</button>
+    </div>
+    {% if search_query %}
+      <div class="col-auto">
+        <a class="btn btn-link" href="{{ url_for('products.product_list') }}">검색 초기화</a>
+      </div>
+    {% endif %}
+  </form>
+
   {% if products %}
     <ul class="list-group">
       {% for product in products %}
@@ -13,6 +29,8 @@
         </li>
       {% endfor %}
     </ul>
+  {% elif search_query %}
+    <p>검색 결과가 없습니다.</p>
   {% else %}
     <p>등록된 상품이 없습니다.</p>
   {% endif %}
