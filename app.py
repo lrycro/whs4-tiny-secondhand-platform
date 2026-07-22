@@ -17,14 +17,21 @@ def create_app(config_class=Config):
     csrf.init_app(app)
     socketio.init_app(app)
 
-    # auth blueprint (login/register) lands in step 2 of SPEC.md 3
     login_manager.login_view = "auth.login"
+    login_manager.login_message = "로그인이 필요합니다."
+    login_manager.login_message_category = "warning"
 
     import models  # noqa: F401  register models with SQLAlchemy metadata before create_all()
 
     @login_manager.user_loader
     def load_user(user_id):
         return models.User.query.get(int(user_id))
+
+    from blueprints.auth.routes import auth_bp
+    from blueprints.main.routes import main_bp
+
+    app.register_blueprint(auth_bp)
+    app.register_blueprint(main_bp)
 
     with app.app_context():
         db.create_all()

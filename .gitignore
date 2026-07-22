@@ -7,3 +7,6 @@ instance/
 .env
 *.db
 .DS_Store
+.pytest_cache/
+CLAUDE.md
+SPEC.md
