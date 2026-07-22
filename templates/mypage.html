@@ -1,0 +1,45 @@
+{% extends "base.html" %}
+{% block title %}마이페이지{% endblock %}
+{% block content %}
+  <h1>마이페이지</h1>
+
+  <h2 class="h5 mt-4">소개글 수정</h2>
+  <form method="post" class="col-md-6" novalidate>
+    {{ bio_form.hidden_tag() }}
+    <div class="mb-3">
+      {{ bio_form.bio.label(class_="form-label") }}
+      {{ bio_form.bio(class_="form-control", rows=4, maxlength=500) }}
+      {% for error in bio_form.bio.errors %}
+        <div class="text-danger small">{{ error }}</div>
+      {% endfor %}
+    </div>
+    {{ bio_form.submit_bio(class_="btn btn-primary") }}
+  </form>
+
+  <h2 class="h5 mt-5">비밀번호 변경</h2>
+  <form method="post" class="col-md-6" novalidate>
+    {{ password_form.hidden_tag() }}
+    <div class="mb-3">
+      {{ password_form.current_password.label(class_="form-label") }}
+      {{ password_form.current_password(class_="form-control", autocomplete="current-password") }}
+      {% for error in password_form.current_password.errors %}
+        <div class="text-danger small">{{ error }}</div>
+      {% endfor %}
+    </div>
+    <div class="mb-3">
+      {{ password_form.new_password.label(class_="form-label") }}
+      {{ password_form.new_password(class_="form-control", maxlength=72, autocomplete="new-password") }}
+      {% for error in password_form.new_password.errors %}
+        <div class="text-danger small">{{ error }}</div>
+      {% endfor %}
+    </div>
+    <div class="mb-3">
+      {{ password_form.new_password_confirm.label(class_="form-label") }}
+      {{ password_form.new_password_confirm(class_="form-control", maxlength=72, autocomplete="new-password") }}
+      {% for error in password_form.new_password_confirm.errors %}
+        <div class="text-danger small">{{ error }}</div>
+      {% endfor %}
+    </div>
+    {{ password_form.submit_password(class_="btn btn-primary") }}
+  </form>
+{% endblock %}

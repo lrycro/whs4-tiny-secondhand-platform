@@ -1,39 +1,8 @@
-import re
-
 from models import User, UserStatus
-
-VALID_PASSWORD = "Passw0rd!"
-
-
-def _extract_csrf(html):
-    match = re.search(r'name="csrf_token"[^>]*value="([^"]+)"', html)
-    assert match, "csrf token not found on page"
-    return match.group(1)
-
-
-def _register(client, username="tester1", password=VALID_PASSWORD, confirm=None):
-    resp = client.get("/register")
-    token = _extract_csrf(resp.get_data(as_text=True))
-    return client.post(
-        "/register",
-        data={
-            "username": username,
-            "password": password,
-            "password_confirm": confirm if confirm is not None else password,
-            "csrf_token": token,
-        },
-        follow_redirects=True,
-    )
-
-
-def _login(client, username="tester1", password=VALID_PASSWORD, extra_qs=""):
-    resp = client.get("/login" + extra_qs)
-    token = _extract_csrf(resp.get_data(as_text=True))
-    return client.post(
-        "/login" + extra_qs,
-        data={"username": username, "password": password, "csrf_token": token},
-        follow_redirects=False,
-    )
+from tests.helpers import VALID_PASSWORD
+from tests.helpers import extract_csrf as _extract_csrf
+from tests.helpers import login as _login
+from tests.helpers import register as _register
 
 
 def test_register_success_hashes_password(client, db):
