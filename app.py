@@ -44,4 +44,6 @@ def create_app(config_class=Config):
 app = create_app()
 
 if __name__ == "__main__":
-    socketio.run(app, debug=True)
+    # allow_unsafe_werkzeug: fine for local dev/demo (SPEC.md's WSL+ngrok setup);
+    # a real deployment would run behind eventlet/gevent or a proper WSGI/ASGI server
+    socketio.run(app, debug=True, allow_unsafe_werkzeug=True)
