@@ -1,4 +1,5 @@
 import os
+import secrets
 
 from dotenv import load_dotenv
 
@@ -8,7 +9,12 @@ BASE_DIR = os.path.abspath(os.path.dirname(__file__))
 
 
 class Config:
-    SECRET_KEY = os.environ.get("SECRET_KEY", "dev-secret-key-change-me")
+    # No hardcoded fallback: a fixed default committed to source control would let
+    # anyone who reads the repo forge session cookies / CSRF tokens. If SECRET_KEY
+    # isn't set via .env, generate a fresh random one per process instead (sessions
+    # just won't survive a dev-server restart, which is an acceptable trade-off for
+    # never having a real, known secret sitting in git history).
+    SECRET_KEY = os.environ.get("SECRET_KEY") or secrets.token_hex(32)
 
     SQLALCHEMY_DATABASE_URI = os.environ.get(
         "DATABASE_URL", "sqlite:///" + os.path.join(BASE_DIR, "instance", "app.db")
