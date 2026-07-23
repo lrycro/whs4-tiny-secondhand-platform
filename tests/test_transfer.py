@@ -290,3 +290,60 @@ def test_balance_charge_check_constraint_rejects_over_max(app):
 def _user_id(app, username):
     with app.app_context():
         return User.query.filter_by(username=username).first().id
+
+
+def test_transactions_requires_login(client, db):
+    resp = client.get("/mypage/transactions", follow_redirects=False)
+    assert resp.status_code == 302
+    assert "/login" in resp.headers["Location"]
+
+
+def test_transactions_shows_own_sent_received_and_charges(client, db, app):
+    register(client, username="txsender")
+    register(client, username="txreceiver")
+    login(client, username="txsender")
+    _set_balance(app, "txsender", 10000)
+
+    _transfer(client, "txreceiver", 3000)
+    _charge(client, "50000")
+
+    resp = client.get("/mypage/transactions")
+    html = resp.get_data(as_text=True)
+    assert "txreceiver님에게 송금" in html
+    assert "-3,000원" in html
+    assert "충전" in html
+    assert "+50,000원" in html
+
+    logout_token = extract_csrf(client.get("/").get_data(as_text=True))
+    client.post("/logout", data={"csrf_token": logout_token}, follow_redirects=True)
+
+    login(client, username="txreceiver")
+    resp2 = client.get("/mypage/transactions")
+    html2 = resp2.get_data(as_text=True)
+    assert "txsender님에게 받음" in html2
+    assert "+3,000원" in html2
+
+
+def test_transactions_does_not_leak_other_users_history(client, db, app):
+    register(client, username="txowner")
+    register(client, username="txbystander")
+    login(client, username="txowner")
+    _set_balance(app, "txowner", 10000)
+    _charge(client, "70000")
+
+    logout_token = extract_csrf(client.get("/").get_data(as_text=True))
+    client.post("/logout", data={"csrf_token": logout_token}, follow_redirects=True)
+
+    login(client, username="txbystander")
+    resp = client.get("/mypage/transactions")
+    html = resp.get_data(as_text=True)
+    assert "70,000원" not in html
+    assert "거래 내역이 없습니다" in html
+
+
+def test_transactions_empty_state(client, db):
+    register(client, username="txempty")
+    login(client, username="txempty")
+
+    resp = client.get("/mypage/transactions")
+    assert "거래 내역이 없습니다" in resp.get_data(as_text=True)

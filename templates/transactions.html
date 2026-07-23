@@ -1,0 +1,32 @@
+{% extends "base.html" %}
+{% block title %}거래 내역{% endblock %}
+{% block content %}
+  <div class="page-header">
+    <h1>거래 내역</h1>
+    <a class="btn btn-link" href="{{ url_for('mypage.mypage') }}">← 마이페이지</a>
+  </div>
+
+  {% if events %}
+    <ul class="tx-list surface">
+      {% for event in events %}
+        <li class="tx-item">
+          <span class="tx-main">
+            {% if event.type == "charge" %}
+              <span class="tx-label">충전</span>
+            {% elif event.direction == "sent" %}
+              <span class="tx-label">{{ event.counterpart.username }}님에게 송금</span>
+            {% else %}
+              <span class="tx-label">{{ event.counterpart.username }}님에게 받음</span>
+            {% endif %}
+            <span class="tx-time">{{ event.created_at.strftime("%Y-%m-%d %H:%M") }}</span>
+          </span>
+          <span class="tx-amount {{ 'tx-negative' if event.direction == 'sent' else 'tx-positive' }}">
+            {{ "-" if event.direction == "sent" else "+" }}{{ "{:,}".format(event.amount) }}원
+          </span>
+        </li>
+      {% endfor %}
+    </ul>
+  {% else %}
+    <p class="empty-state">거래 내역이 없습니다.</p>
+  {% endif %}
+{% endblock %}

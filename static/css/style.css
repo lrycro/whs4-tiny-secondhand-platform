@@ -612,6 +612,57 @@ small, .small {
   white-space: nowrap;
 }
 
+/* ---------- transaction history (마이페이지에서 접근) ---------- */
+
+.tx-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  overflow: hidden;
+}
+
+.tx-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 1rem;
+  padding: 1rem 1.5rem;
+  border-bottom: 1px solid var(--color-border);
+}
+
+.tx-item:last-child {
+  border-bottom: none;
+}
+
+.tx-main {
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+}
+
+.tx-label {
+  font-weight: 500;
+}
+
+.tx-time {
+  color: var(--color-text-secondary);
+  font-size: 0.85rem;
+  font-variant-numeric: tabular-nums;
+}
+
+.tx-amount {
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.tx-positive {
+  color: var(--color-success);
+}
+
+.tx-negative {
+  color: var(--color-text);
+}
+
 /* ---------- product detail ---------- */
 
 .product-detail {
