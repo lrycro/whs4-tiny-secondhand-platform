@@ -1,35 +1,40 @@
 {% extends "base.html" %}
 {% block title %}상품 관리{% endblock %}
 {% block content %}
-  <h1>상품 관리</h1>
-  <table class="table">
-    <thead>
-      <tr><th>ID</th><th>상품명</th><th>판매자</th><th>상태</th><th>신고수</th><th></th></tr>
-    </thead>
-    <tbody>
-      {% for product in products %}
-        <tr>
-          <td>{{ product.id }}</td>
-          <td><a href="{{ url_for('products.product_detail', product_id=product.id) }}">{{ product.name }}</a></td>
-          <td>{{ product.seller.username }}</td>
-          <td>{{ product.status.value }}</td>
-          <td>{{ product.report_count }}</td>
-          <td>
-            <form method="post" action="{{ url_for('admin.toggle_product_status', product_id=product.id) }}"
-                  class="d-inline">
-              <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-              <button type="submit" class="btn btn-sm btn-outline-secondary">
-                {{ "차단 해제" if product.status.value == "blocked" else "차단" }}
-              </button>
-            </form>
-            <form method="post" action="{{ url_for('admin.delete_product', product_id=product.id) }}"
-                  class="d-inline" onsubmit="return confirm('정말 강제 삭제하시겠습니까?');">
-              <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-              <button type="submit" class="btn btn-sm btn-outline-danger">강제 삭제</button>
-            </form>
-          </td>
-        </tr>
-      {% endfor %}
-    </tbody>
-  </table>
+  <div class="page-header">
+    <h1>상품 관리</h1>
+    <a class="btn btn-link" href="{{ url_for('admin.dashboard') }}">← 대시보드</a>
+  </div>
+  <div class="surface admin-table-wrap">
+    <table class="table admin-table">
+      <thead>
+        <tr><th>ID</th><th>상품명</th><th>판매자</th><th>상태</th><th>신고수</th><th></th></tr>
+      </thead>
+      <tbody>
+        {% for product in products %}
+          <tr>
+            <td>{{ product.id }}</td>
+            <td><a href="{{ url_for('products.product_detail', product_id=product.id) }}">{{ product.name }}</a></td>
+            <td>{{ product.seller.username }}</td>
+            <td>{{ product.status.value }}</td>
+            <td>{{ product.report_count }}</td>
+            <td>
+              <form method="post" action="{{ url_for('admin.toggle_product_status', product_id=product.id) }}"
+                    class="d-inline">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                <button type="submit" class="btn btn-sm btn-outline-secondary">
+                  {{ "차단 해제" if product.status.value == "blocked" else "차단" }}
+                </button>
+              </form>
+              <form method="post" action="{{ url_for('admin.delete_product', product_id=product.id) }}"
+                    class="d-inline" onsubmit="return confirm('정말 강제 삭제하시겠습니까?');">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                <button type="submit" class="btn btn-sm btn-outline-danger">강제 삭제</button>
+              </form>
+            </td>
+          </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
 {% endblock %}

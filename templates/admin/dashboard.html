@@ -1,15 +1,34 @@
 {% extends "base.html" %}
 {% block title %}관리자 대시보드{% endblock %}
 {% block content %}
-  <h1>관리자 대시보드</h1>
-  <ul class="list-group col-md-6 mb-4">
-    <li class="list-group-item d-flex justify-content-between"><span>전체 유저</span><strong>{{ counts.users }}</strong></li>
-    <li class="list-group-item d-flex justify-content-between"><span>휴면 유저</span><strong>{{ counts.suspended_users }}</strong></li>
-    <li class="list-group-item d-flex justify-content-between"><span>전체 상품</span><strong>{{ counts.products }}</strong></li>
-    <li class="list-group-item d-flex justify-content-between"><span>차단된 상품</span><strong>{{ counts.blocked_products }}</strong></li>
-    <li class="list-group-item d-flex justify-content-between"><span>전체 신고</span><strong>{{ counts.reports }}</strong></li>
-  </ul>
-  <a class="btn btn-outline-primary me-2" href="{{ url_for('admin.users') }}">유저 관리</a>
-  <a class="btn btn-outline-primary me-2" href="{{ url_for('admin.products') }}">상품 관리</a>
-  <a class="btn btn-outline-primary" href="{{ url_for('admin.reports') }}">신고 목록</a>
+  <div class="page-header">
+    <h1>관리자 대시보드</h1>
+  </div>
+  <div class="stat-grid">
+    <div class="surface stat-card">
+      <span class="stat-value">{{ counts.users }}</span>
+      <span class="stat-label">전체 유저</span>
+    </div>
+    <div class="surface stat-card">
+      <span class="stat-value">{{ counts.suspended_users }}</span>
+      <span class="stat-label">휴면 유저</span>
+    </div>
+    <div class="surface stat-card">
+      <span class="stat-value">{{ counts.products }}</span>
+      <span class="stat-label">전체 상품</span>
+    </div>
+    <div class="surface stat-card">
+      <span class="stat-value">{{ counts.blocked_products }}</span>
+      <span class="stat-label">차단된 상품</span>
+    </div>
+    <div class="surface stat-card">
+      <span class="stat-value">{{ counts.reports }}</span>
+      <span class="stat-label">전체 신고</span>
+    </div>
+  </div>
+  <div class="admin-nav-actions">
+    <a class="btn btn-outline-primary" href="{{ url_for('admin.users') }}">유저 관리</a>
+    <a class="btn btn-outline-primary" href="{{ url_for('admin.products') }}">상품 관리</a>
+    <a class="btn btn-outline-primary" href="{{ url_for('admin.reports') }}">신고 목록</a>
+  </div>
 {% endblock %}

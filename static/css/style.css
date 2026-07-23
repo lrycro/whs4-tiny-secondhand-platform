@@ -848,6 +848,75 @@ input[type="number"]::-webkit-inner-spin-button {
   margin-bottom: 0;
 }
 
+/* ---------- generic form card (상품 등록/수정, 신고) ---------- */
+
+.form-card {
+  max-width: 560px;
+  padding: 2rem;
+}
+
+.report-target {
+  color: var(--color-text-secondary);
+  margin-bottom: 1.5rem;
+}
+
+/* ---------- admin ---------- */
+
+.stat-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+  gap: 1rem;
+  margin-bottom: 2rem;
+}
+
+.stat-card {
+  padding: 1.5rem;
+  text-align: center;
+}
+
+.stat-value {
+  display: block;
+  font-size: 2rem;
+  font-weight: 700;
+  color: var(--color-text);
+}
+
+.stat-label {
+  display: block;
+  margin-top: 0.4rem;
+  color: var(--color-text-secondary);
+  font-size: 0.9rem;
+}
+
+.admin-nav-actions {
+  display: flex;
+  gap: 0.6rem;
+  flex-wrap: wrap;
+}
+
+.admin-table-wrap {
+  padding: 0;
+  overflow-x: auto;
+}
+
+.admin-table {
+  margin-bottom: 0;
+}
+
+.admin-table thead th {
+  background-color: var(--color-bg-subtle);
+  color: var(--color-text-secondary);
+  font-weight: 500;
+  font-size: 0.85rem;
+  border-bottom: 1px solid var(--color-border);
+}
+
+.admin-table td,
+.admin-table th {
+  padding: 0.85rem 1.25rem;
+  vertical-align: middle;
+}
+
 /* ---------- misc components reused across pages ---------- */
 
 .list-group-item {

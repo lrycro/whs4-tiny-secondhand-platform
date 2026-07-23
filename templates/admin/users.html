@@ -1,33 +1,38 @@
 {% extends "base.html" %}
 {% block title %}유저 관리{% endblock %}
 {% block content %}
-  <h1>유저 관리</h1>
-  <table class="table">
-    <thead>
-      <tr><th>ID</th><th>아이디</th><th>role</th><th>상태</th><th>신고수</th><th>잔액</th><th></th></tr>
-    </thead>
-    <tbody>
-      {% for user in users %}
-        <tr>
-          <td>{{ user.id }}</td>
-          <td>{{ user.username }}</td>
-          <td>{{ user.role.value }}</td>
-          <td>{{ user.status.value }}</td>
-          <td>{{ user.report_count }}</td>
-          <td>{{ "{:,}".format(user.balance) }}</td>
-          <td>
-            {% if user.id != current_user.id %}
-              <form method="post" action="{{ url_for('admin.toggle_user_status', user_id=user.id) }}"
-                    class="d-inline" onsubmit="return confirm('정말 상태를 변경하시겠습니까?');">
-                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                <button type="submit" class="btn btn-sm btn-outline-secondary">
-                  {{ "휴면 해제" if user.status.value == "suspended" else "휴면 처리" }}
-                </button>
-              </form>
-            {% endif %}
-          </td>
-        </tr>
-      {% endfor %}
-    </tbody>
-  </table>
+  <div class="page-header">
+    <h1>유저 관리</h1>
+    <a class="btn btn-link" href="{{ url_for('admin.dashboard') }}">← 대시보드</a>
+  </div>
+  <div class="surface admin-table-wrap">
+    <table class="table admin-table">
+      <thead>
+        <tr><th>ID</th><th>아이디</th><th>role</th><th>상태</th><th>신고수</th><th>잔액</th><th></th></tr>
+      </thead>
+      <tbody>
+        {% for user in users %}
+          <tr>
+            <td>{{ user.id }}</td>
+            <td>{{ user.username }}</td>
+            <td>{{ user.role.value }}</td>
+            <td>{{ user.status.value }}</td>
+            <td>{{ user.report_count }}</td>
+            <td>{{ "{:,}".format(user.balance) }}</td>
+            <td>
+              {% if user.id != current_user.id %}
+                <form method="post" action="{{ url_for('admin.toggle_user_status', user_id=user.id) }}"
+                      class="d-inline" onsubmit="return confirm('정말 상태를 변경하시겠습니까?');">
+                  <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                  <button type="submit" class="btn btn-sm btn-outline-secondary">
+                    {{ "휴면 해제" if user.status.value == "suspended" else "휴면 처리" }}
+                  </button>
+                </form>
+              {% endif %}
+            </td>
+          </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
 {% endblock %}
