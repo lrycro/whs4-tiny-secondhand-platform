@@ -1,5 +1,6 @@
 import os
 
+import click
 from flask import Flask
 
 from config import Config
@@ -35,6 +36,7 @@ def create_app(config_class=Config):
     def load_user(user_id):
         return db.session.get(models.User, int(user_id))
 
+    from blueprints.admin.routes import admin_bp
     from blueprints.auth.routes import auth_bp
     from blueprints.chat.routes import chat_bp
     from blueprints.main.routes import main_bp
@@ -50,9 +52,30 @@ def create_app(config_class=Config):
     app.register_blueprint(chat_bp)
     app.register_blueprint(report_bp)
     app.register_blueprint(transfer_bp)
+    app.register_blueprint(admin_bp)
 
     with app.app_context():
         db.create_all()
+
+    @app.cli.command("create-admin")
+    @click.argument("username")
+    @click.argument("password")
+    def create_admin(username, password):
+        """Create or promote a user to admin. The ONLY way to get an admin
+        account -- the registration form always sets role='user' (never a
+        client-controllable field), per SPEC.md's checklist item #30."""
+        with app.app_context():
+            user = models.User.query.filter_by(username=username).first()
+            if user is not None:
+                user.role = models.UserRole.ADMIN
+                db.session.commit()
+                click.echo(f"'{username}' 계정을 admin으로 승격했습니다.")
+            else:
+                user = models.User(username=username, role=models.UserRole.ADMIN)
+                user.set_password(password)
+                db.session.add(user)
+                db.session.commit()
+                click.echo(f"admin 계정 '{username}'을(를) 생성했습니다.")
 
     return app
 

@@ -1,0 +1,15 @@
+{% extends "base.html" %}
+{% block title %}관리자 대시보드{% endblock %}
+{% block content %}
+  <h1>관리자 대시보드</h1>
+  <ul class="list-group col-md-6 mb-4">
+    <li class="list-group-item d-flex justify-content-between"><span>전체 유저</span><strong>{{ counts.users }}</strong></li>
+    <li class="list-group-item d-flex justify-content-between"><span>휴면 유저</span><strong>{{ counts.suspended_users }}</strong></li>
+    <li class="list-group-item d-flex justify-content-between"><span>전체 상품</span><strong>{{ counts.products }}</strong></li>
+    <li class="list-group-item d-flex justify-content-between"><span>차단된 상품</span><strong>{{ counts.blocked_products }}</strong></li>
+    <li class="list-group-item d-flex justify-content-between"><span>전체 신고</span><strong>{{ counts.reports }}</strong></li>
+  </ul>
+  <a class="btn btn-outline-primary me-2" href="{{ url_for('admin.users') }}">유저 관리</a>
+  <a class="btn btn-outline-primary me-2" href="{{ url_for('admin.products') }}">상품 관리</a>
+  <a class="btn btn-outline-primary" href="{{ url_for('admin.reports') }}">신고 목록</a>
+{% endblock %}

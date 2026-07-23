@@ -175,3 +175,19 @@ class Transaction(db.Model):
 
     def __repr__(self):
         return f"<Transaction {self.id} {self.sender_id}->{self.receiver_id} {self.amount}>"
+
+
+class AdminActionLog(db.Model):
+    __tablename__ = "admin_action_logs"
+
+    id = db.Column(db.Integer, primary_key=True)
+    admin_id = db.Column(db.Integer, db.ForeignKey("users.id"), nullable=False, index=True)
+    action = db.Column(db.String(50), nullable=False)
+    target_type = db.Column(db.String(20), nullable=False)
+    target_id = db.Column(db.Integer, nullable=False)
+    created_at = db.Column(db.DateTime, nullable=False, default=_utcnow)
+
+    admin = db.relationship("User", foreign_keys=[admin_id])
+
+    def __repr__(self):
+        return f"<AdminActionLog {self.id} {self.action} {self.target_type}:{self.target_id}>"
