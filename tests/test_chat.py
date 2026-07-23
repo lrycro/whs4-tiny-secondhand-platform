@@ -1,6 +1,6 @@
 from extensions import socketio
 from models import ChatThread, GlobalMessage, Message, Product, User
-from tests.helpers import extract_csrf, login, register
+from tests.helpers import extract_csrf, login, register, valid_photo
 
 
 def _logout(client):
@@ -18,7 +18,13 @@ def _create_product(client, name="채팅용상품", price=1000):
     token = extract_csrf(resp.get_data(as_text=True))
     return client.post(
         "/products/new",
-        data={"name": name, "description": "설명", "price": str(price), "csrf_token": token},
+        data={
+            "name": name,
+            "description": "설명",
+            "price": str(price),
+            "csrf_token": token,
+            "photo": valid_photo(),
+        },
         content_type="multipart/form-data",
         follow_redirects=True,
     )

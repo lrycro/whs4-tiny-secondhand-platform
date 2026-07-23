@@ -4,7 +4,7 @@ import os
 from PIL import Image
 
 from models import Product
-from tests.helpers import extract_csrf, login, register
+from tests.helpers import extract_csrf, login, register, valid_photo
 
 
 def _valid_png_bytes():
@@ -14,11 +14,16 @@ def _valid_png_bytes():
     return buf
 
 
-def _create_product(client, name="중고 자전거", description="거의 새것", price=15000, photo=None):
+_NO_PHOTO = object()
+
+
+def _create_product(client, name="중고 자전거", description="거의 새것", price=15000, photo=_NO_PHOTO):
     resp = client.get("/products/new")
     token = extract_csrf(resp.get_data(as_text=True))
     data = {"name": name, "description": description, "price": str(price), "csrf_token": token}
-    if photo is not None:
+    if photo is _NO_PHOTO:
+        data["photo"] = valid_photo()
+    elif photo is not None:
         data["photo"] = photo
     return client.post(
         "/products/new",
@@ -101,6 +106,42 @@ def test_create_product_zero_price_accepted(client, db, app):
         product = Product.query.filter_by(name="무료나눔상품").first()
         assert product is not None
         assert product.price == 0
+
+
+def test_create_product_missing_photo_rejected(client, db, app):
+    # SPEC.md P3/F5: "각 상품은 상품명, 가격, 사진을 보여주어야 함" -- 사진 없는
+    # 상품 등록은 폼 검증에서 거부되어야 한다.
+    register(client, username="seller3c")
+    login(client, username="seller3c")
+
+    resp = _create_product(client, photo=None)
+    assert "상품 사진을 등록해주세요" in resp.get_data(as_text=True)
+    with app.app_context():
+        assert Product.query.count() == 0
+
+
+def test_edit_product_without_new_photo_keeps_existing(client, db, app):
+    # 수정 시에는 사진을 재업로드하지 않아도 기존 사진이 유지되어야 한다 (등록 시에만
+    # 필수라는 조건은 ProductCreateForm에서만 강제됨).
+    register(client, username="seller3d")
+    login(client, username="seller3d")
+    _create_product(client, name="사진유지테스트")
+    product = _get_product(app, name="사진유지테스트")
+    original_filename = product.image_filename
+    assert original_filename is not None
+
+    token = extract_csrf(client.get(f"/products/{product.id}/edit").get_data(as_text=True))
+    resp = client.post(
+        f"/products/{product.id}/edit",
+        data={"name": "사진유지테스트2", "description": "d", "price": "1000", "csrf_token": token},
+        content_type="multipart/form-data",
+        follow_redirects=True,
+    )
+    assert "상품 정보가 수정되었습니다" in resp.get_data(as_text=True)
+
+    with app.app_context():
+        updated = Product.query.filter_by(id=product.id).first()
+        assert updated.image_filename == original_filename
 
 
 def test_create_product_bad_photo_extension_rejected(client, db, app):

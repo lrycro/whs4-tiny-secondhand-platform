@@ -4,7 +4,7 @@ import uuid
 from flask import Blueprint, abort, current_app, flash, redirect, render_template, request, url_for
 from flask_login import current_user, login_required
 
-from blueprints.products.forms import ProductForm
+from blueprints.products.forms import ProductCreateForm, ProductForm
 from extensions import db
 from models import GlobalMessage, Product, ProductStatus
 
@@ -79,7 +79,7 @@ def product_search():
 @products_bp.route("/products/new", methods=["GET", "POST"])
 @login_required
 def product_new():
-    form = ProductForm()
+    form = ProductCreateForm()
     if form.validate_on_submit():
         product = Product(
             name=form.name.data,

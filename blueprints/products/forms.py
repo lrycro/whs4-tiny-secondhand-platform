@@ -1,5 +1,5 @@
 from flask_wtf import FlaskForm
-from flask_wtf.file import FileAllowed, FileField, FileSize
+from flask_wtf.file import FileAllowed, FileField, FileRequired, FileSize
 from PIL import Image, UnidentifiedImageError
 from wtforms import IntegerField, StringField, SubmitField, TextAreaField
 from wtforms.validators import DataRequired, InputRequired, Length, NumberRange, Optional, ValidationError
@@ -62,3 +62,17 @@ class ProductForm(FlaskForm):
         ],
     )
     submit = SubmitField("저장")
+
+
+class ProductCreateForm(ProductForm):
+    # SPEC.md P3/F5: 사진은 상품 등록 시 필수. 수정(ProductForm) 시에는 기존 사진을
+    # 유지할 수 있어야 하므로 photo가 선택값이어야 해서, 등록 전용으로 필드를 오버라이드한다.
+    photo = FileField(
+        "사진",
+        validators=[
+            FileRequired(message="상품 사진을 등록해주세요."),
+            FileAllowed(ALLOWED_IMAGE_EXTENSIONS, message="jpg, jpeg, png, gif, webp 파일만 업로드할 수 있습니다."),
+            FileSize(max_size=5 * 1024 * 1024, message="파일 크기는 5MB 이하여야 합니다."),
+            validate_image_content,
+        ],
+    )

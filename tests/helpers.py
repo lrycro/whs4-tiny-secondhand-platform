@@ -1,6 +1,16 @@
+import io
 import re
 
+from PIL import Image
+
 VALID_PASSWORD = "Passw0rd!"
+
+
+def valid_photo():
+    buf = io.BytesIO()
+    Image.new("RGB", (2, 2), color="red").save(buf, format="PNG")
+    buf.seek(0)
+    return (buf, "photo.png")
 
 
 def extract_csrf(html):

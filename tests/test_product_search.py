@@ -1,5 +1,5 @@
 from models import Product, ProductStatus
-from tests.helpers import extract_csrf, login, register
+from tests.helpers import extract_csrf, login, register, valid_photo
 
 
 def _create_product(client, name, description=""):
@@ -7,7 +7,13 @@ def _create_product(client, name, description=""):
     token = extract_csrf(resp.get_data(as_text=True))
     return client.post(
         "/products/new",
-        data={"name": name, "description": description, "price": "1000", "csrf_token": token},
+        data={
+            "name": name,
+            "description": description,
+            "price": "1000",
+            "csrf_token": token,
+            "photo": valid_photo(),
+        },
         content_type="multipart/form-data",
         follow_redirects=True,
     )

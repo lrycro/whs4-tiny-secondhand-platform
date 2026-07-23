@@ -1,6 +1,6 @@
 from extensions import db
 from models import AdminActionLog, Product, ProductStatus, Report, ReportTargetType, User, UserRole, UserStatus
-from tests.helpers import extract_csrf, login, register
+from tests.helpers import extract_csrf, login, register, valid_photo
 
 
 def _make_admin(app, username):
@@ -20,7 +20,7 @@ def _create_product(client, name="관리자테스트상품", seller_username=Non
     token = extract_csrf(resp.get_data(as_text=True))
     return client.post(
         "/products/new",
-        data={"name": name, "description": "설명", "price": "1000", "csrf_token": token},
+        data={"name": name, "description": "설명", "price": "1000", "csrf_token": token, "photo": valid_photo()},
         content_type="multipart/form-data",
         follow_redirects=True,
     )
