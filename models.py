@@ -9,6 +9,7 @@ from extensions import db
 LOGIN_LOCK_THRESHOLD = 5
 LOGIN_LOCK_DURATION = timedelta(minutes=15)
 REPORT_BLOCK_THRESHOLD = 5
+MAX_BALANCE = 10_000_000
 
 
 def _utcnow():
@@ -65,7 +66,11 @@ class User(UserMixin, db.Model):
 
     products = db.relationship("Product", backref="seller", lazy=True)
 
-    __table_args__ = (db.CheckConstraint("balance >= 0", name="ck_user_balance_non_negative"),)
+    __table_args__ = (
+        db.CheckConstraint(
+            f"balance >= 0 AND balance <= {MAX_BALANCE}", name="ck_user_balance_range"
+        ),
+    )
 
     def set_password(self, raw_password):
         self.password_hash = bcrypt.hashpw(

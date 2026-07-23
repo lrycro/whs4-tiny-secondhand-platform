@@ -2,7 +2,7 @@ import pytest
 from sqlalchemy.exc import IntegrityError
 
 from extensions import db
-from models import BalanceCharge, CHARGE_MAX_AMOUNT, Transaction, User
+from models import BalanceCharge, CHARGE_MAX_AMOUNT, MAX_BALANCE, Transaction, User
 from tests.helpers import extract_csrf, login, register
 
 
@@ -152,6 +152,42 @@ def test_balance_check_constraint_rejects_negative(app):
         db.session.rollback()
 
 
+def test_balance_check_constraint_rejects_over_max(app):
+    with app.app_context():
+        user = User(username="ckuser3")
+        user.set_password("Passw0rd!")
+        user.balance = MAX_BALANCE + 1
+        db.session.add(user)
+        with pytest.raises(IntegrityError):
+            db.session.commit()
+        db.session.rollback()
+
+
+def test_transfer_exceeding_receiver_balance_cap_rejected(client, db, app):
+    register(client, username="sender9")
+    register(client, username="receiver9")
+    login(client, username="sender9")
+    _set_balance(app, "sender9", 1000)
+    _set_balance(app, "receiver9", MAX_BALANCE - 500)
+
+    resp = _transfer(client, "receiver9", "1000")
+    assert f"보유 잔액이 상한({MAX_BALANCE:,}원)을 초과하게 되어 송금할 수 없습니다" in resp.get_data(as_text=True)
+    assert _get_balance(app, "sender9") == 1000
+    assert _get_balance(app, "receiver9") == MAX_BALANCE - 500
+
+
+def test_transfer_up_to_receiver_balance_cap_accepted(client, db, app):
+    register(client, username="sender10")
+    register(client, username="receiver10")
+    login(client, username="sender10")
+    _set_balance(app, "sender10", 1000)
+    _set_balance(app, "receiver10", MAX_BALANCE - 1000)
+
+    resp = _transfer(client, "receiver10", "1000")
+    assert "송금했습니다" in resp.get_data(as_text=True)
+    assert _get_balance(app, "receiver10") == MAX_BALANCE
+
+
 def test_charge_requires_login(client, db):
     resp = client.get("/wallet/charge", follow_redirects=False)
     assert resp.status_code == 302
@@ -207,6 +243,26 @@ def test_charge_at_max_boundary_accepted(client, db, app):
     resp = _charge(client, str(CHARGE_MAX_AMOUNT))
     assert f"{CHARGE_MAX_AMOUNT:,}원이 충전되었습니다" in resp.get_data(as_text=True)
     assert _get_balance(app, "charger5") == CHARGE_MAX_AMOUNT
+
+
+def test_charge_exceeding_total_balance_cap_rejected(client, db, app):
+    register(client, username="charger7")
+    login(client, username="charger7")
+    _set_balance(app, "charger7", MAX_BALANCE - 500)
+
+    resp = _charge(client, "1000")
+    assert f"보유 잔액이 상한({MAX_BALANCE:,}원)을 초과하게 되어 충전할 수 없습니다" in resp.get_data(as_text=True)
+    assert _get_balance(app, "charger7") == MAX_BALANCE - 500
+
+
+def test_charge_up_to_total_balance_cap_accepted(client, db, app):
+    register(client, username="charger8")
+    login(client, username="charger8")
+    _set_balance(app, "charger8", MAX_BALANCE - 1000)
+
+    resp = _charge(client, "1000")
+    assert "충전되었습니다" in resp.get_data(as_text=True)
+    assert _get_balance(app, "charger8") == MAX_BALANCE
 
 
 def test_charge_missing_amount_rejected(client, db, app):

@@ -4,7 +4,7 @@ from sqlalchemy.exc import SQLAlchemyError
 
 from blueprints.transfer.forms import ChargeForm, TransferForm
 from extensions import db
-from models import BalanceCharge, Transaction, User
+from models import MAX_BALANCE, BalanceCharge, Transaction, User
 
 transfer_bp = Blueprint("transfer", __name__)
 
@@ -28,6 +28,10 @@ def transfer():
             form.receiver_username.errors.append("본인에게는 송금할 수 없습니다.")
         elif current_user.balance < amount:
             form.amount.errors.append("잔액이 부족합니다.")
+        elif receiver.balance + amount > MAX_BALANCE:
+            form.amount.errors.append(
+                f"받는 사람의 보유 잔액이 상한({MAX_BALANCE:,}원)을 초과하게 되어 송금할 수 없습니다."
+            )
         else:
             try:
                 current_user.balance -= amount
@@ -54,6 +58,12 @@ def charge():
 
     if form.validate_on_submit():
         amount = form.amount.data
+        if current_user.balance + amount > MAX_BALANCE:
+            form.amount.errors.append(
+                f"보유 잔액이 상한({MAX_BALANCE:,}원)을 초과하게 되어 충전할 수 없습니다."
+            )
+            return render_template("transfer/charge.html", form=form, balance=current_user.balance)
+
         try:
             current_user.balance += amount
             db.session.add(BalanceCharge(user_id=current_user.id, amount=amount))
