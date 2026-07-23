@@ -10,5 +10,6 @@ instance/
 .pytest_cache/
 CLAUDE.md
 SPEC.md
+REPORT_REFERENCE.md
 static/uploads/products/*
 !static/uploads/products/.gitkeep
