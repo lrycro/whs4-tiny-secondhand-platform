@@ -2,6 +2,8 @@ from flask_wtf import FlaskForm
 from wtforms import IntegerField, StringField, SubmitField
 from wtforms.validators import DataRequired, InputRequired, Length, NumberRange
 
+from models import CHARGE_MAX_AMOUNT
+
 
 class TransferForm(FlaskForm):
     receiver_username = StringField(
@@ -19,3 +21,18 @@ class TransferForm(FlaskForm):
         ],
     )
     submit = SubmitField("송금하기")
+
+
+class ChargeForm(FlaskForm):
+    amount = IntegerField(
+        "충전 금액",
+        validators=[
+            InputRequired(message="충전 금액을 입력해주세요."),
+            NumberRange(
+                min=1,
+                max=CHARGE_MAX_AMOUNT,
+                message=f"충전 금액은 1원 이상 {CHARGE_MAX_AMOUNT:,}원 이하여야 합니다.",
+            ),
+        ],
+    )
+    submit = SubmitField("충전하기")

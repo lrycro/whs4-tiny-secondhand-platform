@@ -1,20 +1,14 @@
 {% extends "base.html" %}
-{% block title %}송금{% endblock %}
+{% block title %}충전{% endblock %}
 {% block content %}
   <div class="page-header">
-    <h1>송금</h1>
-    <a class="btn btn-outline-primary btn-sm" href="{{ url_for('transfer.charge') }}">충전하기</a>
+    <h1>충전</h1>
+    <a class="btn btn-outline-primary btn-sm" href="{{ url_for('transfer.transfer') }}">송금하러 가기</a>
   </div>
   <p>내 잔액: <strong>{{ "{:,}".format(balance) }}원</strong></p>
+  <p class="text-muted small">실제 결제는 연동되어 있지 않습니다 -- 입력한 금액만큼 바로 잔액에 반영되는 시뮬레이션입니다.</p>
   <form method="post" class="col-md-6" novalidate>
     {{ form.hidden_tag() }}
-    <div class="mb-3">
-      {{ form.receiver_username.label(class_="form-label") }}
-      {{ form.receiver_username(class_="form-control") }}
-      {% for error in form.receiver_username.errors %}
-        <div class="text-danger small">{{ error }}</div>
-      {% endfor %}
-    </div>
     <div class="mb-3 amount-field">
       {{ form.amount.label(class_="form-label") }}
       <div class="amount-input-wrap">

@@ -2,9 +2,9 @@ from flask import Blueprint, flash, redirect, render_template, request, url_for
 from flask_login import current_user, login_required
 from sqlalchemy.exc import SQLAlchemyError
 
-from blueprints.transfer.forms import TransferForm
+from blueprints.transfer.forms import ChargeForm, TransferForm
 from extensions import db
-from models import Transaction, User
+from models import BalanceCharge, Transaction, User
 
 transfer_bp = Blueprint("transfer", __name__)
 
@@ -45,3 +45,25 @@ def transfer():
             return redirect(url_for("transfer.transfer"))
 
     return render_template("transfer/form.html", form=form, balance=current_user.balance)
+
+
+@transfer_bp.route("/wallet/charge", methods=["GET", "POST"])
+@login_required
+def charge():
+    form = ChargeForm()
+
+    if form.validate_on_submit():
+        amount = form.amount.data
+        try:
+            current_user.balance += amount
+            db.session.add(BalanceCharge(user_id=current_user.id, amount=amount))
+            db.session.commit()
+        except SQLAlchemyError:
+            db.session.rollback()
+            flash("충전 처리 중 오류가 발생했습니다. 다시 시도해주세요.", "danger")
+            return render_template("transfer/charge.html", form=form, balance=current_user.balance)
+
+        flash(f"{amount:,}원이 충전되었습니다.", "success")
+        return redirect(url_for("transfer.charge"))
+
+    return render_template("transfer/charge.html", form=form, balance=current_user.balance)

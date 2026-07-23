@@ -2,7 +2,7 @@ import pytest
 from sqlalchemy.exc import IntegrityError
 
 from extensions import db
-from models import Transaction, User
+from models import BalanceCharge, CHARGE_MAX_AMOUNT, Transaction, User
 from tests.helpers import extract_csrf, login, register
 
 
@@ -24,6 +24,16 @@ def _transfer(client, receiver_username, amount):
     return client.post(
         "/transfer",
         data={"receiver_username": receiver_username, "amount": amount, "csrf_token": token},
+        follow_redirects=True,
+    )
+
+
+def _charge(client, amount):
+    resp = client.get("/wallet/charge")
+    token = extract_csrf(resp.get_data(as_text=True))
+    return client.post(
+        "/wallet/charge",
+        data={"amount": amount, "csrf_token": token},
         follow_redirects=True,
     )
 
@@ -140,3 +150,87 @@ def test_balance_check_constraint_rejects_negative(app):
         with pytest.raises(IntegrityError):
             db.session.commit()
         db.session.rollback()
+
+
+def test_charge_requires_login(client, db):
+    resp = client.get("/wallet/charge", follow_redirects=False)
+    assert resp.status_code == 302
+    assert "/login" in resp.headers["Location"]
+
+
+def test_charge_success(client, db, app):
+    register(client, username="charger1")
+    login(client, username="charger1")
+    _set_balance(app, "charger1", 1000)
+
+    resp = _charge(client, "50000")
+    assert "50,000원이 충전되었습니다" in resp.get_data(as_text=True)
+    assert _get_balance(app, "charger1") == 51000
+
+    with app.app_context():
+        record = BalanceCharge.query.filter_by(user_id=_user_id(app, "charger1")).first()
+        assert record is not None
+        assert record.amount == 50000
+
+
+def test_charge_zero_amount_rejected(client, db, app):
+    register(client, username="charger2")
+    login(client, username="charger2")
+
+    resp = _charge(client, "0")
+    assert f"충전 금액은 1원 이상 {CHARGE_MAX_AMOUNT:,}원 이하여야 합니다" in resp.get_data(as_text=True)
+    assert _get_balance(app, "charger2") == 0
+
+
+def test_charge_negative_amount_rejected(client, db, app):
+    register(client, username="charger3")
+    login(client, username="charger3")
+
+    resp = _charge(client, "-1000")
+    assert f"충전 금액은 1원 이상 {CHARGE_MAX_AMOUNT:,}원 이하여야 합니다" in resp.get_data(as_text=True)
+    assert _get_balance(app, "charger3") == 0
+
+
+def test_charge_over_max_rejected(client, db, app):
+    register(client, username="charger4")
+    login(client, username="charger4")
+
+    resp = _charge(client, str(CHARGE_MAX_AMOUNT + 1))
+    assert f"충전 금액은 1원 이상 {CHARGE_MAX_AMOUNT:,}원 이하여야 합니다" in resp.get_data(as_text=True)
+    assert _get_balance(app, "charger4") == 0
+
+
+def test_charge_at_max_boundary_accepted(client, db, app):
+    register(client, username="charger5")
+    login(client, username="charger5")
+
+    resp = _charge(client, str(CHARGE_MAX_AMOUNT))
+    assert f"{CHARGE_MAX_AMOUNT:,}원이 충전되었습니다" in resp.get_data(as_text=True)
+    assert _get_balance(app, "charger5") == CHARGE_MAX_AMOUNT
+
+
+def test_charge_missing_amount_rejected(client, db, app):
+    register(client, username="charger6")
+    login(client, username="charger6")
+
+    resp = _charge(client, "")
+    assert "충전 금액을 입력해주세요" in resp.get_data(as_text=True)
+    assert _get_balance(app, "charger6") == 0
+
+
+def test_balance_charge_check_constraint_rejects_over_max(app):
+    with app.app_context():
+        user = User(username="ckuser2")
+        user.set_password("Passw0rd!")
+        db.session.add(user)
+        db.session.commit()
+
+        db.session.add(BalanceCharge(user_id=user.id, amount=CHARGE_MAX_AMOUNT + 1))
+        with pytest.raises(IntegrityError):
+            db.session.commit()
+        db.session.rollback()
+
+
+def _user_id(app, username):
+    with app.app_context():
+        return User.query.filter_by(username=username).first().id

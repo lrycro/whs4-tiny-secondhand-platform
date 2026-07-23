@@ -246,6 +246,34 @@ class Transaction(db.Model):
         return f"<Transaction {self.id} {self.sender_id}->{self.receiver_id} {self.amount}>"
 
 
+CHARGE_MAX_AMOUNT = 1_000_000
+
+
+class BalanceCharge(db.Model):
+    """Fully simulated top-up (SPEC.md F13: '실제 결제 연동 아님') -- adds straight to
+    the user's own balance with no real payment gateway. Kept separate from
+    Transaction (which always has two distinct real parties) rather than a
+    self-transfer hack, so the two kinds of balance change stay distinguishable."""
+
+    __tablename__ = "balance_charges"
+
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, db.ForeignKey("users.id"), nullable=False, index=True)
+    amount = db.Column(db.Integer, nullable=False)
+    created_at = db.Column(db.DateTime, nullable=False, default=_utcnow)
+
+    user = db.relationship("User", foreign_keys=[user_id])
+
+    __table_args__ = (
+        db.CheckConstraint(
+            f"amount > 0 AND amount <= {CHARGE_MAX_AMOUNT}", name="ck_balance_charge_amount_range"
+        ),
+    )
+
+    def __repr__(self):
+        return f"<BalanceCharge {self.id} user={self.user_id} amount={self.amount}>"
+
+
 class AdminActionLog(db.Model):
     __tablename__ = "admin_action_logs"
 
