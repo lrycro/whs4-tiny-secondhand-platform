@@ -1,14 +1,20 @@
 import enum
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 
 import bcrypt
 from flask_login import UserMixin
 
 from extensions import db
 
+LOGIN_LOCK_THRESHOLD = 5
+LOGIN_LOCK_DURATION = timedelta(minutes=15)
+
 
 def _utcnow():
-    return datetime.now(timezone.utc)
+    # naive UTC on purpose: SQLite's DATETIME column round-trip through SQLAlchemy does
+    # not reliably preserve tzinfo, so keep everything naive-but-UTC to avoid ending up
+    # with a mix of aware/naive datetimes that can't be compared (locked_until checks).
+    return datetime.now(timezone.utc).replace(tzinfo=None)
 
 
 class UserRole(str, enum.Enum):
@@ -42,6 +48,8 @@ class User(UserMixin, db.Model):
     role = db.Column(db.Enum(UserRole), nullable=False, default=UserRole.USER)
     status = db.Column(db.Enum(UserStatus), nullable=False, default=UserStatus.ACTIVE)
     report_count = db.Column(db.Integer, nullable=False, default=0)
+    failed_login_attempts = db.Column(db.Integer, nullable=False, default=0)
+    locked_until = db.Column(db.DateTime, nullable=True)
     created_at = db.Column(db.DateTime, nullable=False, default=_utcnow)
 
     products = db.relationship("Product", backref="seller", lazy=True)
@@ -61,6 +69,19 @@ class User(UserMixin, db.Model):
 
     def is_active_status(self):
         return self.status == UserStatus.ACTIVE
+
+    def is_locked(self):
+        return self.locked_until is not None and self.locked_until > _utcnow()
+
+    def register_failed_login(self):
+        self.failed_login_attempts += 1
+        if self.failed_login_attempts >= LOGIN_LOCK_THRESHOLD:
+            self.locked_until = _utcnow() + LOGIN_LOCK_DURATION
+            self.failed_login_attempts = 0
+
+    def reset_failed_login(self):
+        self.failed_login_attempts = 0
+        self.locked_until = None
 
     def __repr__(self):
         return f"<User {self.id} {self.username}>"

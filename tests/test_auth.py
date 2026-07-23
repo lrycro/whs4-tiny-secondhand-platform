@@ -1,4 +1,6 @@
-from models import User, UserStatus
+from datetime import timedelta
+
+from models import LOGIN_LOCK_THRESHOLD, User, UserStatus, _utcnow
 from tests.helpers import VALID_PASSWORD
 from tests.helpers import extract_csrf as _extract_csrf
 from tests.helpers import login as _login
@@ -114,5 +116,62 @@ def test_login_open_redirect_is_blocked(client, db):
 def test_login_protocol_relative_redirect_is_blocked(client, db):
     _register(client, username="redirtest2")
     resp = _login(client, username="redirtest2", extra_qs="?next=//evil.example.com/steal")
+    assert resp.status_code == 302
+    assert resp.headers["Location"] == "/"
+
+
+def test_login_marks_session_permanent(client, db):
+    _register(client, username="permtest")
+    _login(client, username="permtest")
+    with client.session_transaction() as sess:
+        assert sess.permanent is True
+
+
+def test_failed_login_increments_counter(client, db):
+    _register(client, username="failcount")
+    _login(client, username="failcount", password="WrongPass1!")
+
+    user = User.query.filter_by(username="failcount").first()
+    assert user.failed_login_attempts == 1
+    assert user.is_locked() is False
+
+
+def test_successful_login_resets_failed_counter(client, db):
+    _register(client, username="resetcount")
+    _login(client, username="resetcount", password="WrongPass1!")
+    _login(client, username="resetcount", password=VALID_PASSWORD)
+
+    user = User.query.filter_by(username="resetcount").first()
+    assert user.failed_login_attempts == 0
+
+
+def test_account_locks_after_threshold_failures(client, db):
+    _register(client, username="lockme")
+
+    for _ in range(LOGIN_LOCK_THRESHOLD):
+        _login(client, username="lockme", password="WrongPass1!")
+
+    user = User.query.filter_by(username="lockme").first()
+    assert user.is_locked() is True
+    assert user.failed_login_attempts == 0  # reset when the lock is applied
+
+    # even the CORRECT password is rejected while locked, with the same generic message
+    resp = _login(client, username="lockme", password=VALID_PASSWORD)
+    assert resp.status_code == 200
+    assert "아이디 또는 비밀번호가 올바르지 않습니다" in resp.get_data(as_text=True)
+
+
+def test_lock_expires_and_correct_password_then_succeeds(client, db, app):
+    _register(client, username="lockexpire")
+    for _ in range(LOGIN_LOCK_THRESHOLD):
+        _login(client, username="lockexpire", password="WrongPass1!")
+
+    with app.app_context():
+        user = User.query.filter_by(username="lockexpire").first()
+        assert user.is_locked() is True
+        user.locked_until = _utcnow() - timedelta(seconds=1)  # simulate the lock expiring
+        db.session.commit()
+
+    resp = _login(client, username="lockexpire", password=VALID_PASSWORD)
     assert resp.status_code == 302
     assert resp.headers["Location"] == "/"

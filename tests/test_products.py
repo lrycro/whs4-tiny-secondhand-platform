@@ -1,7 +1,16 @@
 import io
 
+from PIL import Image
+
 from models import Product
 from tests.helpers import extract_csrf, login, register
+
+
+def _valid_png_bytes():
+    buf = io.BytesIO()
+    Image.new("RGB", (2, 2), color="red").save(buf, format="PNG")
+    buf.seek(0)
+    return buf
 
 
 def _create_product(client, name="중고 자전거", description="거의 새것", price=15000, photo=None):
@@ -83,7 +92,7 @@ def test_create_product_valid_photo_saved(client, db, app):
     register(client, username="seller5")
     login(client, username="seller5")
 
-    resp = _create_product(client, photo=(io.BytesIO(b"\x89PNG\r\n\x1a\n fake"), "photo.png"))
+    resp = _create_product(client, photo=(_valid_png_bytes(), "photo.png"))
     assert "상품이 등록되었습니다" in resp.get_data(as_text=True)
 
     product = Product.query.filter_by(seller_id=1).first()
@@ -97,6 +106,19 @@ def test_create_product_valid_photo_saved(client, db, app):
     saved_path = os.path.join(upload_dir, product.image_filename)
     assert os.path.exists(saved_path)
     os.remove(saved_path)
+
+
+def test_create_product_fake_image_content_rejected(client, db):
+    register(client, username="seller6")
+    login(client, username="seller6")
+
+    # extension allowlist passes ("photo.png"), but the content is not a real image --
+    # this is exactly the "renamed executable" bypass the extension-only check misses
+    resp = _create_product(
+        client, photo=(io.BytesIO(b"not actually an image, just plain bytes" * 5), "photo.png")
+    )
+    assert "올바른 이미지 파일이 아닙니다" in resp.get_data(as_text=True)
+    assert Product.query.count() == 0
 
 
 def test_product_detail_shows_seller_and_owner_controls(client, db):

@@ -1,5 +1,6 @@
 import os
 import secrets
+from datetime import timedelta
 
 from dotenv import load_dotenv
 
@@ -21,13 +22,21 @@ class Config:
     )
     SQLALCHEMY_TRACK_MODIFICATIONS = False
 
-    # SPEC.md 2.4: HttpOnly + SameSite=Lax always; Secure requires HTTPS
-    # (ngrok demo has TLS -> set SESSION_COOKIE_SECURE=true; plain http://localhost dev -> leave false)
+    # SPEC.md 2.4: HttpOnly + SameSite=Lax always; Secure requires HTTPS.
+    # Default is the PRODUCTION-safe value (true) -- local http://localhost dev must
+    # override via .env (SESSION_COOKIE_SECURE=false), see .env.example. Deploying
+    # (e.g. behind ngrok) without that override is the correct/expected state.
     SESSION_COOKIE_HTTPONLY = True
     SESSION_COOKIE_SAMESITE = "Lax"
-    SESSION_COOKIE_SECURE = os.environ.get("SESSION_COOKIE_SECURE", "false").lower() == "true"
+    SESSION_COOKIE_SECURE = os.environ.get("SESSION_COOKIE_SECURE", "true").lower() == "true"
 
     WTF_CSRF_ENABLED = True
+
+    # idle session timeout; Flask's default SESSION_REFRESH_EACH_REQUEST (True) extends
+    # this on every request, so it's a sliding 30-minute-of-inactivity expiry, not a
+    # hard 30-minute-from-login cutoff. Only takes effect for sessions marked permanent
+    # (see session.permanent = True in blueprints/auth/routes.py's login view).
+    PERMANENT_SESSION_LIFETIME = timedelta(minutes=30)
 
     # product photo uploads: extension allowlist enforced in blueprints/products/forms.py,
     # size cap enforced here (also blocks oversized-upload DoS at the WSGI layer)

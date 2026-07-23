@@ -1,12 +1,33 @@
 from flask_wtf import FlaskForm
 from flask_wtf.file import FileAllowed, FileField, FileSize
+from PIL import Image, UnidentifiedImageError
 from wtforms import IntegerField, StringField, SubmitField, TextAreaField
-from wtforms.validators import DataRequired, Length, NumberRange, Optional
+from wtforms.validators import DataRequired, Length, NumberRange, Optional, ValidationError
 
-# extension allowlist only (no image-content sniffing) -- fine for this project's
-# threat model, but a spoofed-extension upload would slip through; note for the
-# step 10 security re-check.
 ALLOWED_IMAGE_EXTENSIONS = ["jpg", "jpeg", "png", "gif", "webp"]
+ALLOWED_IMAGE_FORMATS = {"PNG", "JPEG", "GIF", "WEBP"}
+
+
+def validate_image_content(form, field):
+    # extension allowlist (FileAllowed) only checks the client-supplied filename string,
+    # which a malicious upload can trivially fake -- actually parse the file with Pillow
+    # to confirm it's a real, decodable image of an allowed format
+    file_storage = field.data
+    if not file_storage or not file_storage.filename:
+        return
+
+    try:
+        file_storage.stream.seek(0)
+        with Image.open(file_storage.stream) as image:
+            image.verify()
+            detected_format = image.format
+    except (UnidentifiedImageError, OSError):
+        raise ValidationError("올바른 이미지 파일이 아닙니다.")
+    finally:
+        file_storage.stream.seek(0)
+
+    if detected_format not in ALLOWED_IMAGE_FORMATS:
+        raise ValidationError("지원하지 않는 이미지 형식입니다.")
 
 
 class ProductForm(FlaskForm):
@@ -34,6 +55,7 @@ class ProductForm(FlaskForm):
             Optional(),
             FileAllowed(ALLOWED_IMAGE_EXTENSIONS, message="jpg, jpeg, png, gif, webp 파일만 업로드할 수 있습니다."),
             FileSize(max_size=5 * 1024 * 1024, message="파일 크기는 5MB 이하여야 합니다."),
+            validate_image_content,
         ],
     )
     submit = SubmitField("저장")

@@ -17,6 +17,7 @@ def app():
         SECRET_KEY = "test-secret"
         SQLALCHEMY_DATABASE_URI = f"sqlite:///{db_path}"
         WTF_CSRF_ENABLED = True
+        SESSION_COOKIE_SECURE = False  # test client talks plain http, like local dev
 
     flask_app = create_app(TestConfig)
 
