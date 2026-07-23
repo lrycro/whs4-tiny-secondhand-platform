@@ -7,35 +7,39 @@ from tests.helpers import login as _login
 from tests.helpers import register as _register
 
 
-def test_register_success_hashes_password(client, db):
+def test_register_success_hashes_password(client, db, app):
     resp = _register(client)
     assert resp.status_code == 200
     assert "로그인해주세요" in resp.get_data(as_text=True)
 
-    user = User.query.filter_by(username="tester1").first()
-    assert user is not None
-    assert user.password_hash != VALID_PASSWORD
-    assert user.check_password(VALID_PASSWORD)
-    assert user.status == UserStatus.ACTIVE
+    with app.app_context():
+        user = User.query.filter_by(username="tester1").first()
+        assert user is not None
+        assert user.password_hash != VALID_PASSWORD
+        assert user.check_password(VALID_PASSWORD)
+        assert user.status == UserStatus.ACTIVE
 
 
-def test_register_duplicate_username_rejected(client, db):
+def test_register_duplicate_username_rejected(client, db, app):
     _register(client, username="dupuser")
     resp = _register(client, username="dupuser")
     assert "이미 사용 중인 아이디입니다" in resp.get_data(as_text=True)
-    assert User.query.filter_by(username="dupuser").count() == 1
+    with app.app_context():
+        assert User.query.filter_by(username="dupuser").count() == 1
 
 
-def test_register_weak_password_rejected(client, db):
+def test_register_weak_password_rejected(client, db, app):
     resp = _register(client, username="weakpw", password="abcdefgh", confirm="abcdefgh")
     assert "영문, 숫자, 특수문자를 포함" in resp.get_data(as_text=True)
-    assert User.query.filter_by(username="weakpw").first() is None
+    with app.app_context():
+        assert User.query.filter_by(username="weakpw").first() is None
 
 
-def test_register_password_mismatch_rejected(client, db):
+def test_register_password_mismatch_rejected(client, db, app):
     resp = _register(client, username="mismatch", password=VALID_PASSWORD, confirm="Different1!")
     assert "비밀번호가 일치하지 않습니다" in resp.get_data(as_text=True)
-    assert User.query.filter_by(username="mismatch").first() is None
+    with app.app_context():
+        assert User.query.filter_by(username="mismatch").first() is None
 
 
 def test_login_success(client, db):
@@ -97,13 +101,14 @@ def test_logout_clears_session(client, db):
     assert "/login" in resp.headers["Location"]
 
 
-def test_csrf_protection_blocks_missing_token(client, db):
+def test_csrf_protection_blocks_missing_token(client, db, app):
     resp = client.post(
         "/register",
         data={"username": "nocsrf", "password": VALID_PASSWORD, "password_confirm": VALID_PASSWORD},
     )
     assert resp.status_code == 400
-    assert User.query.filter_by(username="nocsrf").first() is None
+    with app.app_context():
+        assert User.query.filter_by(username="nocsrf").first() is None
 
 
 def test_login_open_redirect_is_blocked(client, db):
@@ -127,33 +132,36 @@ def test_login_marks_session_permanent(client, db):
         assert sess.permanent is True
 
 
-def test_failed_login_increments_counter(client, db):
+def test_failed_login_increments_counter(client, db, app):
     _register(client, username="failcount")
     _login(client, username="failcount", password="WrongPass1!")
 
-    user = User.query.filter_by(username="failcount").first()
-    assert user.failed_login_attempts == 1
-    assert user.is_locked() is False
+    with app.app_context():
+        user = User.query.filter_by(username="failcount").first()
+        assert user.failed_login_attempts == 1
+        assert user.is_locked() is False
 
 
-def test_successful_login_resets_failed_counter(client, db):
+def test_successful_login_resets_failed_counter(client, db, app):
     _register(client, username="resetcount")
     _login(client, username="resetcount", password="WrongPass1!")
     _login(client, username="resetcount", password=VALID_PASSWORD)
 
-    user = User.query.filter_by(username="resetcount").first()
-    assert user.failed_login_attempts == 0
+    with app.app_context():
+        user = User.query.filter_by(username="resetcount").first()
+        assert user.failed_login_attempts == 0
 
 
-def test_account_locks_after_threshold_failures(client, db):
+def test_account_locks_after_threshold_failures(client, db, app):
     _register(client, username="lockme")
 
     for _ in range(LOGIN_LOCK_THRESHOLD):
         _login(client, username="lockme", password="WrongPass1!")
 
-    user = User.query.filter_by(username="lockme").first()
-    assert user.is_locked() is True
-    assert user.failed_login_attempts == 0  # reset when the lock is applied
+    with app.app_context():
+        user = User.query.filter_by(username="lockme").first()
+        assert user.is_locked() is True
+        assert user.failed_login_attempts == 0  # reset when the lock is applied
 
     # even the CORRECT password is rejected while locked, with the same generic message
     resp = _login(client, username="lockme", password=VALID_PASSWORD)

@@ -8,7 +8,7 @@ def test_mypage_requires_login(client, db):
     assert "/login" in resp.headers["Location"]
 
 
-def test_update_bio_success(client, db):
+def test_update_bio_success(client, db, app):
     register(client, username="bioupdate")
     login(client, username="bioupdate")
 
@@ -20,11 +20,12 @@ def test_update_bio_success(client, db):
     )
     assert "소개글이 수정되었습니다" in resp.get_data(as_text=True)
 
-    user = User.query.filter_by(username="bioupdate").first()
-    assert user.bio == "안녕하세요, 반갑습니다."
+    with app.app_context():
+        user = User.query.filter_by(username="bioupdate").first()
+        assert user.bio == "안녕하세요, 반갑습니다."
 
 
-def test_update_bio_too_long_rejected(client, db):
+def test_update_bio_too_long_rejected(client, db, app):
     register(client, username="biolong")
     login(client, username="biolong")
 
@@ -36,11 +37,12 @@ def test_update_bio_too_long_rejected(client, db):
     )
     assert "500자 이하로 입력해주세요" in resp.get_data(as_text=True)
 
-    user = User.query.filter_by(username="biolong").first()
-    assert user.bio is None
+    with app.app_context():
+        user = User.query.filter_by(username="biolong").first()
+        assert user.bio is None
 
 
-def test_change_password_success(client, db):
+def test_change_password_success(client, db, app):
     register(client, username="pwchange")
     login(client, username="pwchange")
 
@@ -58,9 +60,10 @@ def test_change_password_success(client, db):
     )
     assert "비밀번호가 변경되었습니다" in resp.get_data(as_text=True)
 
-    user = User.query.filter_by(username="pwchange").first()
-    assert user.check_password("NewPassw0rd!")
-    assert not user.check_password(VALID_PASSWORD)
+    with app.app_context():
+        user = User.query.filter_by(username="pwchange").first()
+        assert user.check_password("NewPassw0rd!")
+        assert not user.check_password(VALID_PASSWORD)
 
     # log out, then confirm old password no longer authenticates and the new one does
     logout_token = extract_csrf(client.get("/").get_data(as_text=True))
@@ -75,7 +78,7 @@ def test_change_password_success(client, db):
     assert ok_resp.headers["Location"] == "/"
 
 
-def test_change_password_wrong_current_rejected(client, db):
+def test_change_password_wrong_current_rejected(client, db, app):
     register(client, username="pwwrong")
     login(client, username="pwwrong")
 
@@ -93,11 +96,12 @@ def test_change_password_wrong_current_rejected(client, db):
     )
     assert "현재 비밀번호가 일치하지 않습니다" in resp.get_data(as_text=True)
 
-    user = User.query.filter_by(username="pwwrong").first()
-    assert user.check_password(VALID_PASSWORD)
+    with app.app_context():
+        user = User.query.filter_by(username="pwwrong").first()
+        assert user.check_password(VALID_PASSWORD)
 
 
-def test_change_password_weak_new_password_rejected(client, db):
+def test_change_password_weak_new_password_rejected(client, db, app):
     register(client, username="pwweak")
     login(client, username="pwweak")
 
@@ -115,11 +119,12 @@ def test_change_password_weak_new_password_rejected(client, db):
     )
     assert "영문, 숫자, 특수문자를 포함" in resp.get_data(as_text=True)
 
-    user = User.query.filter_by(username="pwweak").first()
-    assert user.check_password(VALID_PASSWORD)
+    with app.app_context():
+        user = User.query.filter_by(username="pwweak").first()
+        assert user.check_password(VALID_PASSWORD)
 
 
-def test_change_password_mismatch_rejected(client, db):
+def test_change_password_mismatch_rejected(client, db, app):
     register(client, username="pwmismatch")
     login(client, username="pwmismatch")
 
@@ -137,8 +142,9 @@ def test_change_password_mismatch_rejected(client, db):
     )
     assert "새 비밀번호가 일치하지 않습니다" in resp.get_data(as_text=True)
 
-    user = User.query.filter_by(username="pwmismatch").first()
-    assert user.check_password(VALID_PASSWORD)
+    with app.app_context():
+        user = User.query.filter_by(username="pwmismatch").first()
+        assert user.check_password(VALID_PASSWORD)
 
 
 def test_mypage_only_affects_current_user(client, db, app):

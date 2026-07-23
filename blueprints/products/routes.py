@@ -4,13 +4,26 @@ import uuid
 from flask import Blueprint, abort, current_app, flash, redirect, render_template, request, url_for
 from flask_login import current_user, login_required
 
+from blueprints.chat.socket_events import GLOBAL_ROOM
 from blueprints.products.forms import ProductForm
 from extensions import db
-from models import Product, ProductStatus
+from models import Message, Product, ProductStatus
 
 products_bp = Blueprint("products", __name__)
 
 SEARCH_QUERY_MAX_LENGTH = 200
+CHAT_HISTORY_LIMIT = 50
+
+
+def _recent_global_messages():
+    history = (
+        Message.query.filter_by(room=GLOBAL_ROOM)
+        .order_by(Message.created_at.desc())
+        .limit(CHAT_HISTORY_LIMIT)
+        .all()
+    )
+    history.reverse()
+    return history
 
 
 def _like_pattern(term):
@@ -39,7 +52,9 @@ def product_list():
     products = (
         Product.query.filter_by(status=ProductStatus.ACTIVE).order_by(Product.created_at.desc()).all()
     )
-    return render_template("products/list.html", products=products, search_query="")
+    return render_template(
+        "products/list.html", products=products, search_query="", chat_history=_recent_global_messages()
+    )
 
 
 @products_bp.route("/products/search")
@@ -57,7 +72,12 @@ def product_search():
             )
         )
     products = query.order_by(Product.created_at.desc()).all()
-    return render_template("products/list.html", products=products, search_query=raw_query)
+    return render_template(
+        "products/list.html",
+        products=products,
+        search_query=raw_query,
+        chat_history=_recent_global_messages(),
+    )
 
 
 @products_bp.route("/products/new", methods=["GET", "POST"])

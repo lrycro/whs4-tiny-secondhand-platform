@@ -5,6 +5,14 @@ from flask import Flask
 from config import Config
 from extensions import csrf, db, login_manager, socketio
 
+# Import BEFORE any socketio.init_app() call. @socketio.on(...) decorators register
+# directly onto socketio.server if it already exists, or queue into socketio.handlers
+# (replayed onto every future server) if it doesn't yet. init_app() always builds a
+# brand-new server, discarding direct registrations -- and create_app() runs once per
+# test, so importing this after init_app() (as create_app() itself does) means the
+# handlers only ever survive for the very first app created in the process.
+import blueprints.chat.socket_events  # noqa: F401,E402
+
 
 def create_app(config_class=Config):
     app = Flask(__name__, instance_relative_config=True)
@@ -25,9 +33,10 @@ def create_app(config_class=Config):
 
     @login_manager.user_loader
     def load_user(user_id):
-        return models.User.query.get(int(user_id))
+        return db.session.get(models.User, int(user_id))
 
     from blueprints.auth.routes import auth_bp
+    from blueprints.chat.routes import chat_bp
     from blueprints.main.routes import main_bp
     from blueprints.mypage.routes import mypage_bp
     from blueprints.products.routes import products_bp
@@ -36,6 +45,7 @@ def create_app(config_class=Config):
     app.register_blueprint(main_bp)
     app.register_blueprint(mypage_bp)
     app.register_blueprint(products_bp)
+    app.register_blueprint(chat_bp)
 
     with app.app_context():
         db.create_all()

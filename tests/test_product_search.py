@@ -80,14 +80,15 @@ def test_search_escapes_like_wildcards(client, db):
     assert "일반상품" not in html
 
 
-def test_search_excludes_blocked_products(client, db):
+def test_search_excludes_blocked_products(client, db, app):
     register(client, username="searcher6")
     login(client, username="searcher6")
     _create_product(client, "차단될상품")
 
-    product = Product.query.filter_by(name="차단될상품").first()
-    product.status = ProductStatus.BLOCKED
-    db.session.commit()
+    with app.app_context():
+        product = Product.query.filter_by(name="차단될상품").first()
+        product.status = ProductStatus.BLOCKED
+        db.session.commit()
 
     resp = client.get("/products/search?q=차단될상품")
     html = resp.get_data(as_text=True)

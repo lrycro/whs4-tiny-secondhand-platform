@@ -134,6 +134,10 @@ class Message(db.Model):
 
     sender = db.relationship("User", foreign_keys=[sender_id])
 
+    __table_args__ = (
+        db.CheckConstraint("length(content) >= 1 AND length(content) <= 1000", name="ck_message_content_length"),
+    )
+
     def __repr__(self):
         return f"<Message {self.id} room={self.room}>"
 
