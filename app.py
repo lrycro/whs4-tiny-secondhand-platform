@@ -41,6 +41,7 @@ def create_app(config_class=Config):
     from blueprints.mypage.routes import mypage_bp
     from blueprints.products.routes import products_bp
     from blueprints.report.routes import report_bp
+    from blueprints.transfer.routes import transfer_bp
 
     app.register_blueprint(auth_bp)
     app.register_blueprint(main_bp)
@@ -48,6 +49,7 @@ def create_app(config_class=Config):
     app.register_blueprint(products_bp)
     app.register_blueprint(chat_bp)
     app.register_blueprint(report_bp)
+    app.register_blueprint(transfer_bp)
 
     with app.app_context():
         db.create_all()

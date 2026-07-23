@@ -55,6 +55,8 @@ class User(UserMixin, db.Model):
 
     products = db.relationship("Product", backref="seller", lazy=True)
 
+    __table_args__ = (db.CheckConstraint("balance >= 0", name="ck_user_balance_non_negative"),)
+
     def set_password(self, raw_password):
         self.password_hash = bcrypt.hashpw(
             raw_password.encode("utf-8"), bcrypt.gensalt()

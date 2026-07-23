@@ -3,8 +3,12 @@
 {% block content %}
   <div class="d-flex justify-content-between align-items-center">
     <h1>{{ other_user.username }}님과의 채팅</h1>
-    <a class="btn btn-sm btn-outline-danger"
-       href="{{ url_for('report.report', target_type='user', target_id=other_user.id) }}">{{ other_user.username }}님 신고</a>
+    <span>
+      <a class="btn btn-sm btn-outline-primary"
+         href="{{ url_for('transfer.transfer', to=other_user.username) }}">송금하기</a>
+      <a class="btn btn-sm btn-outline-danger"
+         href="{{ url_for('report.report', target_type='user', target_id=other_user.id) }}">{{ other_user.username }}님 신고</a>
+    </span>
   </div>
 
   <div id="chat-log" class="border rounded p-3 mb-2" style="height: 400px; overflow-y: auto; background: #f8f9fa;">
