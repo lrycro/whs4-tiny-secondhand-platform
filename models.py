@@ -44,6 +44,21 @@ class ProductStatus(str, enum.Enum):
     BLOCKED = "blocked"
 
 
+class ProductSaleStatus(str, enum.Enum):
+    # 거래 진행 상태. 신고 누적으로 인한 ProductStatus(active/blocked)와는 별개 개념
+    # (SPEC.md 2.2) -- 판매자 본인만 변경 가능해야 한다.
+    ON_SALE = "on_sale"
+    RESERVED = "reserved"
+    SOLD = "sold"
+
+
+SALE_STATUS_LABELS = {
+    ProductSaleStatus.ON_SALE: "판매중",
+    ProductSaleStatus.RESERVED: "예약중",
+    ProductSaleStatus.SOLD: "거래완료",
+}
+
+
 class ReportTargetType(str, enum.Enum):
     USER = "user"
     PRODUCT = "product"
@@ -120,6 +135,9 @@ class Product(db.Model):
     image_filename = db.Column(db.String(255), nullable=True)
     seller_id = db.Column(db.Integer, db.ForeignKey("users.id"), nullable=False, index=True)
     status = db.Column(db.Enum(ProductStatus), nullable=False, default=ProductStatus.ACTIVE)
+    sale_status = db.Column(
+        db.Enum(ProductSaleStatus), nullable=False, default=ProductSaleStatus.ON_SALE
+    )
     report_count = db.Column(db.Integer, nullable=False, default=0)
     created_at = db.Column(db.DateTime, nullable=False, default=_utcnow)
 

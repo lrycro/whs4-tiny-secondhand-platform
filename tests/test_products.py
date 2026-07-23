@@ -256,6 +256,80 @@ def test_non_owner_cannot_edit_product(client, db, app):
         assert unchanged.name == "A의상품"
 
 
+def test_new_product_defaults_to_on_sale(client, db, app):
+    register(client, username="salestatus1")
+    login(client, username="salestatus1")
+    _create_product(client, name="상태기본값테스트")
+    product = _get_product(app, name="상태기본값테스트")
+
+    with app.app_context():
+        assert Product.query.filter_by(id=product.id).first().sale_status.value == "on_sale"
+
+    resp = client.get(f"/products/{product.id}")
+    assert "판매중" in resp.get_data(as_text=True)
+
+
+def test_owner_can_change_sale_status(client, db, app):
+    register(client, username="salestatus2")
+    login(client, username="salestatus2")
+    _create_product(client, name="상태변경테스트")
+    product = _get_product(app, name="상태변경테스트")
+
+    token = extract_csrf(client.get(f"/products/{product.id}").get_data(as_text=True))
+    resp = client.post(
+        f"/products/{product.id}/status",
+        data={"sale_status": "reserved", "csrf_token": token},
+        follow_redirects=True,
+    )
+    assert "판매 상태가 변경되었습니다" in resp.get_data(as_text=True)
+    assert "예약중" in resp.get_data(as_text=True)
+
+    with app.app_context():
+        updated = Product.query.filter_by(id=product.id).first()
+        assert updated.sale_status.value == "reserved"
+
+
+def test_non_owner_cannot_change_sale_status(client, db, app):
+    register(client, username="salestatusOwner")
+    login(client, username="salestatusOwner")
+    _create_product(client, name="타인상태변경테스트")
+    product = _get_product(app, name="타인상태변경테스트")
+    _logout(client)
+
+    register(client, username="salestatusAttacker")
+    login(client, username="salestatusAttacker")
+
+    token = extract_csrf(client.get("/").get_data(as_text=True))
+    resp = client.post(
+        f"/products/{product.id}/status",
+        data={"sale_status": "sold", "csrf_token": token},
+    )
+    assert resp.status_code == 403
+
+    with app.app_context():
+        unchanged = Product.query.filter_by(id=product.id).first()
+        assert unchanged.sale_status.value == "on_sale"
+
+
+def test_invalid_sale_status_value_rejected(client, db, app):
+    register(client, username="salestatus3")
+    login(client, username="salestatus3")
+    _create_product(client, name="잘못된상태테스트")
+    product = _get_product(app, name="잘못된상태테스트")
+
+    token = extract_csrf(client.get(f"/products/{product.id}").get_data(as_text=True))
+    resp = client.post(
+        f"/products/{product.id}/status",
+        data={"sale_status": "deleted_from_existence", "csrf_token": token},
+        follow_redirects=True,
+    )
+    assert "판매 상태를 변경하지 못했습니다" in resp.get_data(as_text=True)
+
+    with app.app_context():
+        unchanged = Product.query.filter_by(id=product.id).first()
+        assert unchanged.sale_status.value == "on_sale"
+
+
 def test_non_owner_cannot_delete_product(client, db, app):
     register(client, username="idorOwnerC")
     login(client, username="idorOwnerC")

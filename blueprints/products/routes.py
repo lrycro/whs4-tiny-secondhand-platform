@@ -4,9 +4,9 @@ import uuid
 from flask import Blueprint, abort, current_app, flash, redirect, render_template, request, url_for
 from flask_login import current_user, login_required
 
-from blueprints.products.forms import ProductCreateForm, ProductForm
+from blueprints.products.forms import ProductCreateForm, ProductForm, SaleStatusForm
 from extensions import db
-from models import GlobalMessage, Product, ProductStatus
+from models import GlobalMessage, Product, ProductSaleStatus, ProductStatus
 
 products_bp = Blueprint("products", __name__)
 
@@ -99,7 +99,28 @@ def product_new():
 @login_required
 def product_detail(product_id):
     product = Product.query.get_or_404(product_id)
-    return render_template("products/detail.html", product=product)
+    sale_status_form = None
+    if current_user.id == product.seller_id:
+        sale_status_form = SaleStatusForm(sale_status=product.sale_status.value)
+    return render_template("products/detail.html", product=product, sale_status_form=sale_status_form)
+
+
+@products_bp.route("/products/<int:product_id>/status", methods=["POST"])
+@login_required
+def product_status(product_id):
+    product = Product.query.get_or_404(product_id)
+    # ownership re-verified server-side regardless of what the client's UI showed (IDOR)
+    if product.seller_id != current_user.id:
+        abort(403)
+
+    form = SaleStatusForm()
+    if form.validate_on_submit():
+        product.sale_status = ProductSaleStatus(form.sale_status.data)
+        db.session.commit()
+        flash("판매 상태가 변경되었습니다.", "success")
+    else:
+        flash("판매 상태를 변경하지 못했습니다.", "danger")
+    return redirect(url_for("products.product_detail", product_id=product.id))
 
 
 @products_bp.route("/products/<int:product_id>/edit", methods=["GET", "POST"])

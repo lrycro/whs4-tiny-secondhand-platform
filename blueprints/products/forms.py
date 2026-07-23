@@ -1,8 +1,10 @@
 from flask_wtf import FlaskForm
 from flask_wtf.file import FileAllowed, FileField, FileRequired, FileSize
 from PIL import Image, UnidentifiedImageError
-from wtforms import IntegerField, StringField, SubmitField, TextAreaField
+from wtforms import IntegerField, SelectField, StringField, SubmitField, TextAreaField
 from wtforms.validators import DataRequired, InputRequired, Length, NumberRange, Optional, ValidationError
+
+from models import SALE_STATUS_LABELS, ProductSaleStatus
 
 ALLOWED_IMAGE_EXTENSIONS = ["jpg", "jpeg", "png", "gif", "webp"]
 ALLOWED_IMAGE_FORMATS = {"PNG", "JPEG", "GIF", "WEBP"}
@@ -76,3 +78,15 @@ class ProductCreateForm(ProductForm):
             validate_image_content,
         ],
     )
+
+
+class SaleStatusForm(FlaskForm):
+    # choices restricted to the enum's own values -- WTForms' SelectField rejects
+    # anything else at validate_on_submit() time, so a forged POST with an
+    # arbitrary string can never reach the model layer (checklist #12-2)
+    sale_status = SelectField(
+        "판매 상태",
+        choices=[(status.value, label) for status, label in SALE_STATUS_LABELS.items()],
+        validators=[DataRequired(message="판매 상태를 선택해주세요.")],
+    )
+    submit = SubmitField("변경")

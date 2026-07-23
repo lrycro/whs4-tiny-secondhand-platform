@@ -33,6 +33,7 @@ def create_app(config_class=Config):
     import models  # noqa: F401  register models with SQLAlchemy metadata before create_all()
 
     app.jinja_env.filters["kst_time"] = models.format_kst_time
+    app.jinja_env.filters["sale_status_label"] = lambda s: models.SALE_STATUS_LABELS.get(s, s.value)
 
     @login_manager.user_loader
     def load_user(user_id):

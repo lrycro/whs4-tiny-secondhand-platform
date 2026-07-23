@@ -12,7 +12,12 @@
     {% endif %}
 
     <div class="product-detail-body surface">
-      <h1>{{ product.name }}</h1>
+      <div class="product-title-row">
+        <h1>{{ product.name }}</h1>
+        <span class="sale-status-badge sale-status-{{ product.sale_status.value }}">
+          {{ product.sale_status | sale_status_label }}
+        </span>
+      </div>
       <p class="product-seller">판매자:
         <a href="{{ url_for('mypage.profile', user_id=product.seller_id) }}">{{ product.seller.username }}</a>
       </p>
@@ -36,6 +41,15 @@
              href="{{ url_for('report.report', target_type='user', target_id=product.seller_id) }}">판매자 신고</a>
         {% endif %}
       </div>
+
+      {% if sale_status_form %}
+        <form action="{{ url_for('products.product_status', product_id=product.id) }}" method="post"
+              class="sale-status-form">
+          {{ sale_status_form.hidden_tag() }}
+          {{ sale_status_form.sale_status(class_="form-select form-select-sm") }}
+          {{ sale_status_form.submit(class_="btn btn-outline-primary btn-sm") }}
+        </form>
+      {% endif %}
     </div>
 
     <a class="btn btn-link" href="{{ url_for('products.product_list') }}">← 목록으로</a>
