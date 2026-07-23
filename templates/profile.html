@@ -1,0 +1,25 @@
+{% extends "base.html" %}
+{% block title %}{{ profile_user.username }}님의 프로필{% endblock %}
+{% block content %}
+  <div class="page-header">
+    <h1>{{ profile_user.username }}</h1>
+  </div>
+
+  <div class="surface profile-card">
+    <p class="profile-joined">가입일: {{ profile_user.created_at.strftime("%Y-%m-%d") }}</p>
+    <p class="profile-bio">{{ profile_user.bio or "소개글이 없습니다." }}</p>
+  </div>
+
+  <h2 class="mb-3">등록한 상품</h2>
+  {% if products %}
+    <ul class="product-list surface">
+      {% for product in products %}
+        <li class="product-list-item">
+          <a href="{{ url_for('products.product_detail', product_id=product.id) }}">{{ product.name }}</a>
+        </li>
+      {% endfor %}
+    </ul>
+  {% else %}
+    <p class="empty-state">등록한 상품이 없습니다.</p>
+  {% endif %}
+{% endblock %}

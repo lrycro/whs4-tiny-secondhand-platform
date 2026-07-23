@@ -1,5 +1,5 @@
-from models import User
-from tests.helpers import VALID_PASSWORD, extract_csrf, login, register
+from models import Product, ProductStatus, User
+from tests.helpers import VALID_PASSWORD, extract_csrf, login, register, valid_photo
 
 
 def test_mypage_requires_login(client, db):
@@ -164,3 +164,74 @@ def test_mypage_only_affects_current_user(client, db, app):
         user_b = User.query.filter_by(username="userB").first()
         assert user_a.bio == "A의 소개글"
         assert user_b.bio is None
+
+
+def _create_product(client, name, price="1000"):
+    resp = client.get("/products/new")
+    token = extract_csrf(resp.get_data(as_text=True))
+    return client.post(
+        "/products/new",
+        data={"name": name, "description": "d", "price": price, "csrf_token": token, "photo": valid_photo()},
+        content_type="multipart/form-data",
+        follow_redirects=True,
+    )
+
+
+def test_profile_requires_login(client, db):
+    resp = client.get("/profile/1", follow_redirects=False)
+    assert resp.status_code == 302
+    assert "/login" in resp.headers["Location"]
+
+
+def test_profile_nonexistent_user_404s(client, db):
+    register(client, username="profileviewer1")
+    login(client, username="profileviewer1")
+
+    resp = client.get("/profile/999999")
+    assert resp.status_code == 404
+
+
+def test_profile_shows_minimal_info_and_products(client, db, app):
+    register(client, username="profiletarget1")
+    login(client, username="profiletarget1")
+
+    token = extract_csrf(client.get("/mypage").get_data(as_text=True))
+    client.post(
+        "/mypage",
+        data={"bio": "안녕하세요 프로필입니다", "submit_bio": "소개글 저장", "csrf_token": token},
+        follow_redirects=True,
+    )
+    _create_product(client, "프로필용상품")
+
+    with app.app_context():
+        target_id = User.query.filter_by(username="profiletarget1").first().id
+
+    logout_token = extract_csrf(client.get("/").get_data(as_text=True))
+    client.post("/logout", data={"csrf_token": logout_token}, follow_redirects=True)
+
+    register(client, username="profileviewer2")
+    login(client, username="profileviewer2")
+
+    resp = client.get(f"/profile/{target_id}")
+    html = resp.get_data(as_text=True)
+    assert resp.status_code == 200
+    assert "profiletarget1" in html
+    assert "안녕하세요 프로필입니다" in html
+    assert "프로필용상품" in html
+    # never leak internal/sensitive fields to another user's profile view
+    assert "balance" not in html.lower()
+
+
+def test_profile_hides_blocked_products(client, db, app):
+    register(client, username="profiletarget2")
+    login(client, username="profiletarget2")
+    _create_product(client, "차단될상품")
+
+    with app.app_context():
+        product = Product.query.filter_by(name="차단될상품").first()
+        product.status = ProductStatus.BLOCKED
+        db.session.commit()
+        target_id = User.query.filter_by(username="profiletarget2").first().id
+
+    resp = client.get(f"/profile/{target_id}")
+    assert "차단될상품" not in resp.get_data(as_text=True)

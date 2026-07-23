@@ -3,7 +3,7 @@ from flask_login import current_user, login_required
 
 from blueprints.mypage.forms import BioForm, ChangePasswordForm
 from extensions import db
-from models import Product
+from models import Product, ProductStatus, User
 
 mypage_bp = Blueprint("mypage", __name__)
 
@@ -37,3 +37,17 @@ def mypage():
     return render_template(
         "mypage.html", bio_form=bio_form, password_form=password_form, my_products=my_products
     )
+
+
+@mypage_bp.route("/profile/<int:user_id>")
+@login_required
+def profile(user_id):
+    # SPEC.md U3/F4: 타인 프로필은 "최소 정보만" 노출 -- balance, role, status,
+    # report_count, 이메일 등 민감/내부 필드는 절대 템플릿에 넘기지 않는다.
+    profile_user = User.query.get_or_404(user_id)
+    products = (
+        Product.query.filter_by(seller_id=profile_user.id, status=ProductStatus.ACTIVE)
+        .order_by(Product.created_at.desc())
+        .all()
+    )
+    return render_template("profile.html", profile_user=profile_user, products=products)

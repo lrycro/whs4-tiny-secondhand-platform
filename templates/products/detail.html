@@ -13,7 +13,9 @@
 
     <div class="product-detail-body surface">
       <h1>{{ product.name }}</h1>
-      <p class="product-seller">판매자: {{ product.seller.username }}</p>
+      <p class="product-seller">판매자:
+        <a href="{{ url_for('mypage.profile', user_id=product.seller_id) }}">{{ product.seller.username }}</a>
+      </p>
       <p class="product-price">{{ "{:,}".format(product.price) }}원</p>
       <p class="product-description">{{ product.description or "" }}</p>
 
