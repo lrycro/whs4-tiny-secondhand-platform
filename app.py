@@ -83,6 +83,15 @@ def create_app(config_class=Config):
 app = create_app()
 
 if __name__ == "__main__":
-    # allow_unsafe_werkzeug: fine for local dev/demo (SPEC.md's WSL+ngrok setup);
-    # a real deployment would run behind eventlet/gevent or a proper WSGI/ASGI server
-    socketio.run(app, debug=True, allow_unsafe_werkzeug=True)
+    # debug defaults to OFF (production-safe): Werkzeug's debug mode shows full stack
+    # traces, source code, and a remote code execution console on any unhandled
+    # exception -- SPEC.md 2.4 explicitly requires debug=False in deployment. Override
+    # to true via .env (FLASK_DEBUG=true) only for local interactive debugging.
+    #
+    # allow_unsafe_werkzeug is independent of debug -- it's about the WSGI server
+    # itself (Werkzeug's dev server, since no eventlet/gevent is installed) not being
+    # meant for production, so it stays on regardless for this project's WSL+ngrok
+    # demo setup; a real deployment would run behind eventlet/gevent or a proper
+    # WSGI/ASGI server instead of this flag.
+    debug_mode = os.environ.get("FLASK_DEBUG", "false").lower() == "true"
+    socketio.run(app, debug=debug_mode, allow_unsafe_werkzeug=True)
