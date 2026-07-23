@@ -1,48 +1,45 @@
 {% extends "base.html" %}
 {% block title %}{{ "검색 결과" if search_query else "상품 목록" }}{% endblock %}
 {% block content %}
-  <div class="d-flex justify-content-between align-items-center mb-3">
+  <div class="page-header">
     <h1>{{ "검색 결과" if search_query else "상품 목록" }}</h1>
     <a class="btn btn-primary" href="{{ url_for('products.product_new') }}">상품 등록</a>
   </div>
 
-  <form method="get" action="{{ url_for('products.product_search') }}" class="row g-2 mb-4">
-    <div class="col-auto">
-      <input type="text" name="q" class="form-control" placeholder="상품명/설명 검색"
-             value="{{ search_query }}" maxlength="200">
-    </div>
-    <div class="col-auto">
-      <button type="submit" class="btn btn-outline-primary">검색</button>
-    </div>
+  <form method="get" action="{{ url_for('products.product_search') }}" class="search-bar">
+    <input type="text" name="q" class="form-control" placeholder="상품명/설명 검색"
+           value="{{ search_query }}" maxlength="200">
+    <button type="submit" class="btn btn-outline-primary">검색</button>
     {% if search_query %}
-      <div class="col-auto">
-        <a class="btn btn-link" href="{{ url_for('products.product_list') }}">검색 초기화</a>
-      </div>
+      <a class="btn btn-link" href="{{ url_for('products.product_list') }}">검색 초기화</a>
     {% endif %}
   </form>
 
   {% if products %}
-    <ul class="list-group">
+    <ul class="product-list surface">
       {% for product in products %}
-        <li class="list-group-item">
+        <li class="product-list-item">
           <a href="{{ url_for('products.product_detail', product_id=product.id) }}">{{ product.name }}</a>
         </li>
       {% endfor %}
     </ul>
   {% elif search_query %}
-    <p>검색 결과가 없습니다.</p>
+    <p class="empty-state">검색 결과가 없습니다.</p>
   {% else %}
-    <p>등록된 상품이 없습니다.</p>
+    <p class="empty-state">등록된 상품이 없습니다.</p>
   {% endif %}
 
-  <hr class="my-5">
-  <h2>전체 채팅</h2>
-  <div id="chat-log" class="border rounded p-3 mb-2" style="height: 300px; overflow-y: auto; background: #f8f9fa;">
+  <hr class="section-divider">
+  <h2 class="mb-3">전체 채팅</h2>
+  <div id="chat-log" class="chat-log surface">
     {% for m in chat_history %}
-      <div class="chat-message"><strong>{{ m.sender.username }}</strong>: {{ m.content }}</div>
+      <div class="chat-message">
+        <span class="chat-time">{{ m.created_at | kst_time }}</span>
+        <strong>{{ m.sender.username }}</strong>: {{ m.content }}
+      </div>
     {% endfor %}
   </div>
-  <form id="chat-form" class="d-flex gap-2 col-md-8">
+  <form id="chat-form" class="chat-form">
     <input type="text" id="chat-input" class="form-control" maxlength="1000"
            placeholder="메시지를 입력하세요" autocomplete="off">
     <button type="submit" class="btn btn-primary">전송</button>
@@ -57,9 +54,13 @@
     var chatInput = document.getElementById("chat-input");
     var chatError = document.getElementById("chat-error");
 
-    function appendMessage(username, content) {
+    function appendMessage(username, content, time) {
       var div = document.createElement("div");
       div.className = "chat-message";
+      var timeSpan = document.createElement("span");
+      timeSpan.className = "chat-time";
+      timeSpan.textContent = time;
+      div.appendChild(timeSpan);
       var strong = document.createElement("strong");
       strong.textContent = username;
       div.appendChild(strong);
@@ -75,8 +76,8 @@
     });
 
     socket.on("receive_message", function (data) {
-      if (data.room !== "global") return;
-      appendMessage(data.sender_username, data.content);
+      if (data.thread_id) return; // this page only listens to the global room
+      appendMessage(data.sender_username, data.content, data.time);
     });
 
     socket.on("chat_error", function (data) {

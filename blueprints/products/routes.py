@@ -4,10 +4,9 @@ import uuid
 from flask import Blueprint, abort, current_app, flash, redirect, render_template, request, url_for
 from flask_login import current_user, login_required
 
-from blueprints.chat.socket_events import GLOBAL_ROOM
 from blueprints.products.forms import ProductForm
 from extensions import db
-from models import Message, Product, ProductStatus
+from models import GlobalMessage, Product, ProductStatus
 
 products_bp = Blueprint("products", __name__)
 
@@ -17,10 +16,7 @@ CHAT_HISTORY_LIMIT = 50
 
 def _recent_global_messages():
     history = (
-        Message.query.filter_by(room=GLOBAL_ROOM)
-        .order_by(Message.created_at.desc())
-        .limit(CHAT_HISTORY_LIMIT)
-        .all()
+        GlobalMessage.query.order_by(GlobalMessage.created_at.desc()).limit(CHAT_HISTORY_LIMIT).all()
     )
     history.reverse()
     return history

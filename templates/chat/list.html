@@ -1,0 +1,33 @@
+{% extends "base.html" %}
+{% block title %}채팅 목록{% endblock %}
+{% block content %}
+  <div class="page-header">
+    <h1>채팅 목록</h1>
+  </div>
+
+  {% if items %}
+    <ul class="product-list surface">
+      {% for item in items %}
+        <li class="chat-list-item">
+          <a href="{{ url_for('chat.dm', product_id=item.thread.product_id, other_user_id=item.other_user.id) }}"
+             class="chat-list-link">
+            <span class="chat-list-main">
+              <span>
+                <span class="chat-list-product">{{ item.thread.product.name }}</span>
+                <span class="chat-list-counterpart">{{ item.other_user.username }}님</span>
+              </span>
+              {% if item.last_message %}
+                <span class="chat-time">{{ item.last_message.created_at | kst_time }}</span>
+              {% endif %}
+            </span>
+            {% if item.last_message %}
+              <span class="chat-list-preview">{{ item.last_message.content }}</span>
+            {% endif %}
+          </a>
+        </li>
+      {% endfor %}
+    </ul>
+  {% else %}
+    <p class="empty-state">아직 채팅한 내역이 없습니다.</p>
+  {% endif %}
+{% endblock %}

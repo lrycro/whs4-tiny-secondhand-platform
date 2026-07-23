@@ -32,6 +32,8 @@ def create_app(config_class=Config):
 
     import models  # noqa: F401  register models with SQLAlchemy metadata before create_all()
 
+    app.jinja_env.filters["kst_time"] = models.format_kst_time
+
     @login_manager.user_loader
     def load_user(user_id):
         return db.session.get(models.User, int(user_id))

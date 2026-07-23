@@ -1,31 +1,41 @@
 {% extends "base.html" %}
 {% block title %}{{ product.name }}{% endblock %}
 {% block content %}
-  <h1>{{ product.name }}</h1>
-  {% if product.status.value == "blocked" %}
-    <div class="alert alert-secondary">이 상품은 신고 누적으로 차단되었습니다.</div>
-  {% endif %}
-  {% if product.image_filename %}
-    <img src="{{ url_for('static', filename='uploads/products/' + product.image_filename) }}"
-         alt="{{ product.name }}" class="img-fluid mb-3" style="max-width: 400px;">
-  {% endif %}
-  <p class="text-muted">판매자: {{ product.seller.username }}</p>
-  <p class="fs-4">{{ "{:,}".format(product.price) }}원</p>
-  <p style="white-space: pre-wrap;">{{ product.description or "" }}</p>
+  <div class="product-detail">
+    {% if product.status.value == "blocked" %}
+      <div class="alert alert-secondary">이 상품은 신고 누적으로 차단되었습니다.</div>
+    {% endif %}
 
-  {% if current_user.id == product.seller_id %}
-    <a class="btn btn-outline-secondary" href="{{ url_for('products.product_edit', product_id=product.id) }}">수정</a>
-    <form action="{{ url_for('products.product_delete', product_id=product.id) }}" method="post"
-          class="d-inline" onsubmit="return confirm('정말 삭제하시겠습니까?');">
-      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-      <button type="submit" class="btn btn-outline-danger">삭제</button>
-    </form>
-  {% else %}
-    <a class="btn btn-outline-primary" href="{{ url_for('chat.dm', user_id=product.seller_id) }}">판매자와 채팅</a>
-    <a class="btn btn-outline-danger"
-       href="{{ url_for('report.report', target_type='product', target_id=product.id) }}">상품 신고</a>
-    <a class="btn btn-outline-danger"
-       href="{{ url_for('report.report', target_type='user', target_id=product.seller_id) }}">판매자 신고</a>
-  {% endif %}
-  <a class="btn btn-link" href="{{ url_for('products.product_list') }}">목록으로</a>
+    {% if product.image_filename %}
+      <img src="{{ url_for('static', filename='uploads/products/' + product.image_filename) }}"
+           alt="{{ product.name }}" class="product-detail-image">
+    {% endif %}
+
+    <div class="product-detail-body surface">
+      <h1>{{ product.name }}</h1>
+      <p class="product-seller">판매자: {{ product.seller.username }}</p>
+      <p class="product-price">{{ "{:,}".format(product.price) }}원</p>
+      <p class="product-description">{{ product.description or "" }}</p>
+
+      <div class="product-actions">
+        {% if current_user.id == product.seller_id %}
+          <a class="btn btn-outline-secondary" href="{{ url_for('products.product_edit', product_id=product.id) }}">수정</a>
+          <form action="{{ url_for('products.product_delete', product_id=product.id) }}" method="post"
+                class="d-inline" onsubmit="return confirm('정말 삭제하시겠습니까?');">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            <button type="submit" class="btn btn-outline-danger">삭제</button>
+          </form>
+        {% else %}
+          <a class="btn btn-outline-primary"
+             href="{{ url_for('chat.dm', product_id=product.id, other_user_id=product.seller_id) }}">판매자와 채팅</a>
+          <a class="btn btn-outline-danger"
+             href="{{ url_for('report.report', target_type='product', target_id=product.id) }}">상품 신고</a>
+          <a class="btn btn-outline-danger"
+             href="{{ url_for('report.report', target_type='user', target_id=product.seller_id) }}">판매자 신고</a>
+        {% endif %}
+      </div>
+    </div>
+
+    <a class="btn btn-link" href="{{ url_for('products.product_list') }}">← 목록으로</a>
+  </div>
 {% endblock %}

@@ -1,7 +1,20 @@
 {% extends "base.html" %}
 {% block title %}{{ other_user.username }}님과의 채팅{% endblock %}
 {% block content %}
-  <div class="d-flex justify-content-between align-items-center">
+  <a class="btn btn-link mb-2" href="{{ url_for('chat.chat_list') }}">← 채팅 목록</a>
+
+  <div class="chat-product-card surface">
+    {% if product.image_filename %}
+      <img src="{{ url_for('static', filename='uploads/products/' + product.image_filename) }}"
+           alt="{{ product.name }}" class="chat-product-thumb">
+    {% endif %}
+    <div class="chat-product-info">
+      <a href="{{ url_for('products.product_detail', product_id=product.id) }}">{{ product.name }}</a>
+      <span class="chat-product-price">{{ "{:,}".format(product.price) }}원</span>
+    </div>
+  </div>
+
+  <div class="page-header">
     <h1>{{ other_user.username }}님과의 채팅</h1>
     <span>
       <a class="btn btn-sm btn-outline-primary"
@@ -11,12 +24,15 @@
     </span>
   </div>
 
-  <div id="chat-log" class="border rounded p-3 mb-2" style="height: 400px; overflow-y: auto; background: #f8f9fa;">
+  <div id="chat-log" class="chat-log surface">
     {% for m in history %}
-      <div class="chat-message"><strong>{{ m.sender.username }}</strong>: {{ m.content }}</div>
+      <div class="chat-message">
+        <span class="chat-time">{{ m.created_at | kst_time }}</span>
+        <strong>{{ m.sender.username }}</strong>: {{ m.content }}
+      </div>
     {% endfor %}
   </div>
-  <form id="chat-form" class="d-flex gap-2">
+  <form id="chat-form" class="chat-form">
     <input type="text" id="chat-input" class="form-control" maxlength="1000"
            placeholder="메시지를 입력하세요" autocomplete="off">
     <button type="submit" class="btn btn-primary">전송</button>
@@ -26,15 +42,19 @@
   <script src="https://cdn.socket.io/4.8.1/socket.io.min.js"></script>
   <script>
   (function () {
-    var targetUserId = {{ other_user.id | tojson }};
+    var threadId = {{ thread.id | tojson }};
     var chatLog = document.getElementById("chat-log");
     var chatForm = document.getElementById("chat-form");
     var chatInput = document.getElementById("chat-input");
     var chatError = document.getElementById("chat-error");
 
-    function appendMessage(username, content) {
+    function appendMessage(username, content, time) {
       var div = document.createElement("div");
       div.className = "chat-message";
+      var timeSpan = document.createElement("span");
+      timeSpan.className = "chat-time";
+      timeSpan.textContent = time;
+      div.appendChild(timeSpan);
       var strong = document.createElement("strong");
       strong.textContent = username;
       div.appendChild(strong);
@@ -46,11 +66,12 @@
     var socket = io();
 
     socket.on("connect", function () {
-      socket.emit("join_room", { target_user_id: targetUserId });
+      socket.emit("join_room", { thread_id: threadId });
     });
 
     socket.on("receive_message", function (data) {
-      appendMessage(data.sender_username, data.content);
+      if (data.thread_id !== threadId) return;
+      appendMessage(data.sender_username, data.content, data.time);
     });
 
     socket.on("chat_error", function (data) {
@@ -62,7 +83,7 @@
       e.preventDefault();
       var content = chatInput.value.trim();
       if (!content) return;
-      socket.emit("send_message", { target_user_id: targetUserId, content: content });
+      socket.emit("send_message", { thread_id: threadId, content: content });
       chatInput.value = "";
     });
 
