@@ -1,23 +1,27 @@
 {% extends "base.html" %}
 {% block title %}로그인{% endblock %}
 {% block content %}
-  <h1>로그인</h1>
-  <form method="post" novalidate class="col-md-6">
-    {{ form.hidden_tag() }}
-    <div class="mb-3">
-      {{ form.username.label(class_="form-label") }}
-      {{ form.username(class_="form-control", autocomplete="username") }}
-      {% for error in form.username.errors %}
-        <div class="text-danger small">{{ error }}</div>
-      {% endfor %}
+  <div class="auth-page">
+    <div class="auth-card card-surface">
+      <h1>로그인</h1>
+      <form method="post" novalidate>
+        {{ form.hidden_tag() }}
+        <div class="mb-3">
+          {{ form.username.label(class_="form-label") }}
+          {{ form.username(class_="form-control", autocomplete="username") }}
+          {% for error in form.username.errors %}
+            <div class="text-danger small">{{ error }}</div>
+          {% endfor %}
+        </div>
+        <div class="mb-3">
+          {{ form.password.label(class_="form-label") }}
+          {{ form.password(class_="form-control", autocomplete="current-password") }}
+          {% for error in form.password.errors %}
+            <div class="text-danger small">{{ error }}</div>
+          {% endfor %}
+        </div>
+        {{ form.submit(class_="btn btn-primary w-100") }}
+      </form>
     </div>
-    <div class="mb-3">
-      {{ form.password.label(class_="form-label") }}
-      {{ form.password(class_="form-control", autocomplete="current-password") }}
-      {% for error in form.password.errors %}
-        <div class="text-danger small">{{ error }}</div>
-      {% endfor %}
-    </div>
-    {{ form.submit(class_="btn btn-primary") }}
-  </form>
+  </div>
 {% endblock %}
