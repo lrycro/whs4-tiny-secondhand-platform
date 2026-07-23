@@ -2,7 +2,7 @@ from flask_wtf import FlaskForm
 from flask_wtf.file import FileAllowed, FileField, FileSize
 from PIL import Image, UnidentifiedImageError
 from wtforms import IntegerField, StringField, SubmitField, TextAreaField
-from wtforms.validators import DataRequired, Length, NumberRange, Optional, ValidationError
+from wtforms.validators import DataRequired, InputRequired, Length, NumberRange, Optional, ValidationError
 
 ALLOWED_IMAGE_EXTENSIONS = ["jpg", "jpeg", "png", "gif", "webp"]
 ALLOWED_IMAGE_FORMATS = {"PNG", "JPEG", "GIF", "WEBP"}
@@ -44,8 +44,11 @@ class ProductForm(FlaskForm):
     )
     price = IntegerField(
         "가격",
+        # InputRequired (checks the raw submitted value), not DataRequired (checks the
+        # coerced value's truthiness) -- DataRequired treats a submitted "0" as "missing"
+        # and shows the wrong message instead of accepting it (NumberRange(min=0) allows 0)
         validators=[
-            DataRequired(message="가격을 입력해주세요."),
+            InputRequired(message="가격을 입력해주세요."),
             NumberRange(min=0, message="가격은 0 이상이어야 합니다."),
         ],
     )

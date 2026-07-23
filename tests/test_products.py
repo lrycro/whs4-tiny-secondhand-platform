@@ -88,6 +88,21 @@ def test_create_product_negative_price_rejected(client, db, app):
         assert Product.query.count() == 0
 
 
+def test_create_product_zero_price_accepted(client, db, app):
+    # price=0 is a legitimate free-item listing (NumberRange(min=0) allows it) --
+    # regression test for a DataRequired-on-IntegerField bug where "0" was wrongly
+    # treated as "missing" instead of being accepted
+    register(client, username="seller3b")
+    login(client, username="seller3b")
+
+    resp = _create_product(client, name="무료나눔상품", price=0)
+    assert "상품이 등록되었습니다" in resp.get_data(as_text=True)
+    with app.app_context():
+        product = Product.query.filter_by(name="무료나눔상품").first()
+        assert product is not None
+        assert product.price == 0
+
+
 def test_create_product_bad_photo_extension_rejected(client, db, app):
     register(client, username="seller4")
     login(client, username="seller4")
