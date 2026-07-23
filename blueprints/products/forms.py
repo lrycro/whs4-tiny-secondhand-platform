@@ -90,3 +90,10 @@ class SaleStatusForm(FlaskForm):
         validators=[DataRequired(message="판매 상태를 선택해주세요.")],
     )
     submit = SubmitField("변경")
+
+
+class PurchaseForm(FlaskForm):
+    # no user-supplied fields -- this form exists purely to carry a CSRF token for
+    # the "구매하기" button. All real validation (balance, ownership, sale_status)
+    # happens server-side in the route, not here.
+    submit = SubmitField("구매하기")

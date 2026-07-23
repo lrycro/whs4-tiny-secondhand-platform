@@ -21,6 +21,11 @@
       <p class="product-seller">판매자:
         <a href="{{ url_for('mypage.profile', user_id=product.seller_id) }}">{{ product.seller.username }}</a>
       </p>
+      {% if show_buyer %}
+        <p class="product-seller">구매자:
+          <a href="{{ url_for('mypage.profile', user_id=product.buyer_id) }}">{{ product.buyer.username }}</a>
+        </p>
+      {% endif %}
       <p class="product-price">{{ "{:,}".format(product.price) }}원</p>
       <p class="product-description">{{ product.description or "" }}</p>
 
@@ -33,6 +38,13 @@
             <button type="submit" class="btn btn-outline-danger">삭제</button>
           </form>
         {% else %}
+          {% if purchase_form %}
+            <form action="{{ url_for('products.product_purchase', product_id=product.id) }}" method="post"
+                  class="d-inline" onsubmit="return confirm('{{ "{:,}".format(product.price) }}원에 이 상품을 구매하시겠습니까?');">
+              {{ purchase_form.hidden_tag() }}
+              {{ purchase_form.submit(class_="btn btn-primary") }}
+            </form>
+          {% endif %}
           <a class="btn btn-outline-primary"
              href="{{ url_for('chat.dm', product_id=product.id, other_user_id=product.seller_id) }}">판매자와 채팅</a>
           <a class="btn btn-outline-danger"

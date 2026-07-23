@@ -79,7 +79,9 @@ class User(UserMixin, db.Model):
     locked_until = db.Column(db.DateTime, nullable=True)
     created_at = db.Column(db.DateTime, nullable=False, default=_utcnow)
 
-    products = db.relationship("Product", backref="seller", lazy=True)
+    products = db.relationship(
+        "Product", backref="seller", lazy=True, foreign_keys="Product.seller_id"
+    )
 
     __table_args__ = (
         db.CheckConstraint(
@@ -138,8 +140,13 @@ class Product(db.Model):
     sale_status = db.Column(
         db.Enum(ProductSaleStatus), nullable=False, default=ProductSaleStatus.ON_SALE
     )
+    # 구매 완료 시에만 채워짐(그 전까지 NULL). 판매자와 별도로 관리하는 이유는
+    # buyer가 구매 시점에 확정되는 값이라 seller_id(등록 시 확정)와 성격이 다르기 때문.
+    buyer_id = db.Column(db.Integer, db.ForeignKey("users.id"), nullable=True, index=True)
     report_count = db.Column(db.Integer, nullable=False, default=0)
     created_at = db.Column(db.DateTime, nullable=False, default=_utcnow)
+
+    buyer = db.relationship("User", foreign_keys=[buyer_id])
 
     __table_args__ = (db.CheckConstraint("price >= 0", name="ck_product_price_non_negative"),)
 
@@ -258,10 +265,14 @@ class Transaction(db.Model):
     sender_id = db.Column(db.Integer, db.ForeignKey("users.id"), nullable=False, index=True)
     receiver_id = db.Column(db.Integer, db.ForeignKey("users.id"), nullable=False, index=True)
     amount = db.Column(db.Integer, nullable=False)
+    # NULL이면 일반 송금. 상품 구매로 발생한 송금이면 해당 Product를 가리켜서
+    # 거래내역 페이지가 "송금"과 "구매/판매"를 구분해 표시할 수 있게 한다.
+    product_id = db.Column(db.Integer, db.ForeignKey("products.id"), nullable=True, index=True)
     created_at = db.Column(db.DateTime, nullable=False, default=_utcnow)
 
     sender = db.relationship("User", foreign_keys=[sender_id])
     receiver = db.relationship("User", foreign_keys=[receiver_id])
+    product = db.relationship("Product")
 
     __table_args__ = (db.CheckConstraint("amount > 0", name="ck_transaction_amount_positive"),)
 

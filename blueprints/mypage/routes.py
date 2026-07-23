@@ -75,12 +75,17 @@ def transactions():
     for tx in transfers:
         direction = "sent" if tx.sender_id == current_user.id else "received"
         counterpart_id = tx.receiver_id if direction == "sent" else tx.sender_id
+        if tx.product_id is not None:
+            event_type = "purchase" if direction == "sent" else "sale"
+        else:
+            event_type = "transfer"
         events.append(
             {
-                "type": "transfer",
+                "type": event_type,
                 "direction": direction,
                 "amount": tx.amount,
                 "counterpart": db.session.get(User, counterpart_id),
+                "product": tx.product,
                 "created_at": tx.created_at,
             }
         )
@@ -91,6 +96,7 @@ def transactions():
                 "direction": None,
                 "amount": charge.amount,
                 "counterpart": None,
+                "product": None,
                 "created_at": charge.created_at,
             }
         )
