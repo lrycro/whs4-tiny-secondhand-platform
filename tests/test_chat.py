@@ -199,3 +199,20 @@ def test_rate_limit_blocks_rapid_messages(client, db, app):
 
     assert len(errors) > 0
     assert len(messages) == 5  # RATE_LIMIT_MAX_MESSAGES
+
+
+def test_chat_message_history_is_escaped_on_render(client, db, app):
+    # the socket payload itself carries raw content (it's just JSON data, not HTML --
+    # escaping is the client's job via textContent, already reviewed in code); this
+    # test is about the SERVER-rendered history on /products, which must escape it
+    register(client, username="xsschatuser")
+    login(client, username="xsschatuser")
+
+    sio_client = socketio.test_client(app, flask_test_client=client)
+    sio_client.emit("join_room", {})
+    sio_client.emit("send_message", {"content": "<script>alert('xss-chat')</script>"})
+
+    resp = client.get("/products")
+    html = resp.get_data(as_text=True)
+    assert "<script>alert('xss-chat')</script>" not in html
+    assert "&lt;script&gt;alert(&#39;xss-chat&#39;)&lt;/script&gt;" in html
