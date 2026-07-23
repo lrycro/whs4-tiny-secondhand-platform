@@ -8,6 +8,7 @@ from extensions import db
 
 LOGIN_LOCK_THRESHOLD = 5
 LOGIN_LOCK_DURATION = timedelta(minutes=15)
+REPORT_BLOCK_THRESHOLD = 5
 
 
 def _utcnow():
@@ -83,6 +84,11 @@ class User(UserMixin, db.Model):
         self.failed_login_attempts = 0
         self.locked_until = None
 
+    def register_report(self):
+        self.report_count += 1
+        if self.report_count >= REPORT_BLOCK_THRESHOLD:
+            self.status = UserStatus.SUSPENDED
+
     def __repr__(self):
         return f"<User {self.id} {self.username}>"
 
@@ -102,6 +108,11 @@ class Product(db.Model):
 
     __table_args__ = (db.CheckConstraint("price >= 0", name="ck_product_price_non_negative"),)
 
+    def register_report(self):
+        self.report_count += 1
+        if self.report_count >= REPORT_BLOCK_THRESHOLD:
+            self.status = ProductStatus.BLOCKED
+
     def __repr__(self):
         return f"<Product {self.id} {self.name}>"
 
@@ -117,6 +128,10 @@ class Report(db.Model):
     created_at = db.Column(db.DateTime, nullable=False, default=_utcnow)
 
     reporter = db.relationship("User", foreign_keys=[reporter_id])
+
+    __table_args__ = (
+        db.CheckConstraint("length(reason) >= 1 AND length(reason) <= 500", name="ck_report_reason_length"),
+    )
 
     def __repr__(self):
         return f"<Report {self.id} {self.target_type.value}:{self.target_id}>"
