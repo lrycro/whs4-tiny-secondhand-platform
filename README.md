@@ -3,20 +3,44 @@ WHS 4기 Secure Coding 과제 - Tiny Second-hand Shopping Platform 개발
 
 ## 로컬 실행
 
+### 사전 준비 (WSL + miniconda가 없다면)
+
+이 프로젝트는 WSL(Ubuntu) + miniconda 환경에서 개발/테스트되었습니다. Windows에서 WSL이 아직 없다면:
+
+```powershell
+# Windows PowerShell(관리자 권한)에서
+wsl --install -d Ubuntu
+```
+
+WSL(Ubuntu) 안에서 miniconda가 아직 없다면:
+
 ```bash
-# 1. 가상환경 생성 (conda 예시 -- venv도 무방)
+wget https://repo.anaconda.com/miniconda3/Miniconda3-latest-Linux-x86_64.sh
+bash Miniconda3-latest-Linux-x86_64.sh
+```
+
+이미 WSL/miniconda가 있거나 macOS·Linux 환경이라면 이 단계는 건너뛰고 아래로 바로 진행하면 됩니다(파이썬 3.11 이상 + `pip`만 있으면 conda 없이 `venv`로도 무방).
+
+### 설치 및 실행
+
+```bash
+# 1. 저장소 클론
+git clone https://github.com/lrycro/whs4-tiny-secondhand-platform.git
+cd whs4-tiny-secondhand-platform
+
+# 2. 가상환경 생성 (conda 예시 -- venv도 무방)
 conda create -n secure-coding python=3.11
 conda activate secure-coding
 
-# 2. 의존성 설치
+# 3. 의존성 설치
 pip install -r requirements.txt
 
-# 3. 환경변수 설정
+# 4. 환경변수 설정
 cp .env.example .env
 # .env를 열어 SECRET_KEY를 실제 랜덤 값으로 채우기 (비워두면 프로세스마다
 # 랜덤 생성되어 재시작 시 세션이 끊김 -- 로컬 개발 편의를 위해 채워두는 걸 권장)
 
-# 4. 서버 실행 (Flask-SocketIO 앱이라 `flask run`이 아니라 이 명령 사용)
+# 5. 서버 실행 (Flask-SocketIO 앱이라 `flask run`이 아니라 이 명령 사용)
 python app.py
 # -> http://127.0.0.1:5000
 ```
